@@ -175,8 +175,11 @@ function cetakPDFHistory(){
 
 async function loadLog(){
   showLoading(true);
-  try{const res=await apiGet({action:'getLog'});if(res.ok){logData=res.data;updateFilter();renderLog();}else showToast('Gagal memuat.','error');}
-  catch(e){showToast('Gagal terhubung.','error');}
+  try{
+    const res=await apiGet({action:'getLog'});
+    if(res.ok){logData=normalizeLogs(res.data);updateFilter();filterLog('');}
+    else showToast('Gagal memuat.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
 loadLog();
