@@ -14,6 +14,9 @@
   <div class="metrics" id="metrics-bar"></div>
   <div class="toolbar">
     <input type="text" placeholder="🔍 Cari nama barang..." oninput="filterSO(this.value)"/>
+    <button class="btn btn-sm btn-outline" onclick="cetakPDFStok()">
+      <i class="ti ti-printer" aria-hidden="true"></i> Cetak PDF
+    </button>
     <button class="btn btn-sm btn-outline" id="btn-update" onclick="openModal()" style="display:none">
       <i class="ti ti-pencil" aria-hidden="true"></i> Update
     </button>
@@ -123,6 +126,97 @@ async function saveStok(){
     else showToast('Gagal menyimpan.','error');
   }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
+}
+
+function cetakPDFStok(){
+  if(!stokData.length){showToast('Data stok belum dimuat.','error');return;}
+  const user=getUser();
+  const tglCetak=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const aman=stokData.filter(b=>b.stok>b.limit).length;
+  const rst=stokData.filter(b=>b.stok>0&&b.stok<=b.limit).length;
+  const habis=stokData.filter(b=>b.stok==0).length;
+
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+<title>Stok Opname — SO Perlengkapan</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+  .page{padding:28px 36px;max-width:740px;margin:0 auto}
+  .header{background:#7B1F2E;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
+  .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
+  .header p{font-size:11px;opacity:.85;margin:2px 0}
+  .summary{display:flex;gap:12px;margin-bottom:18px}
+  .sum-box{flex:1;border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center;border-top:3px solid #7B1F2E}
+  .sum-box .val{font-size:22px;font-weight:700;color:#7B1F2E}
+  .sum-box .lbl{font-size:10px;color:#888;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .sum-box.warn{border-top-color:#EF9F27}.sum-box.warn .val{color:#854f0b}
+  .sum-box.danger{border-top-color:#E24B4A}.sum-box.danger .val{color:#a32d2d}
+  .sum-box.ok{border-top-color:#3b6d11}.sum-box.ok .val{color:#3b6d11}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#F9ECED;color:#7B1F2E;text-align:left;padding:8px 10px;font-weight:700;border:1px solid #E8C4C8}
+  td{padding:7px 10px;border:1px solid #ddd;vertical-align:middle}
+  tr:nth-child(even) td{background:#fafafa}
+  .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700}
+  .b-ok{background:#eaf3de;color:#3b6d11}
+  .b-warn{background:#faeeda;color:#854f0b}
+  .b-danger{background:#fcebeb;color:#a32d2d}
+  .bar-wrap{background:#eee;border-radius:99px;height:5px;width:80px;display:inline-block;vertical-align:middle}
+  .bar{height:5px;border-radius:99px}
+  .footer{margin-top:24px;font-size:10px;color:#aaa;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{padding:20px 28px}}
+</style></head><body><div class="page">
+
+<div class="header">
+  <h1>📦 Laporan Stok Opname Gudang</h1>
+  <p>Assyifa Tour & Travel — SO Perlengkapan Umroh</p>
+  <p>Dicetak: ${tglCetak} &nbsp;·&nbsp; Oleh: ${user.username}</p>
+</div>
+
+<div class="summary">
+  <div class="sum-box"><div class="val">${stokData.length}</div><div class="lbl">Total Item</div></div>
+  <div class="sum-box ok"><div class="val">${aman}</div><div class="lbl">Stok Aman</div></div>
+  <div class="sum-box warn"><div class="val">${rst}</div><div class="lbl">Perlu Restock</div></div>
+  <div class="sum-box danger"><div class="val">${habis}</div><div class="lbl">Habis</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th width="4%">No</th>
+      <th width="35%">Nama Barang</th>
+      <th width="18%">Harga (Pricelist)</th>
+      <th width="10%">Stok</th>
+      <th width="10%">Limit</th>
+      <th width="13%">Status</th>
+      <th width="10%">Grafik</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${stokData.map((b,i)=>{
+      const pct=Math.min(100,Math.round(b.stok/Math.max(b.limit*2,20)*100));
+      const col=b.stok==0?'#E24B4A':b.stok<=b.limit?'#EF9F27':'#3b6d11';
+      const badge=b.stok==0?'<span class="badge b-danger">Habis</span>':b.stok<=b.limit?'<span class="badge b-warn">Restock!</span>':'<span class="badge b-ok">Aman</span>';
+      return`<tr>
+        <td>${i+1}</td>
+        <td><strong>${b.nama}</strong></td>
+        <td>Rp ${Number(b.harga).toLocaleString('id-ID')}</td>
+        <td style="font-size:15px;font-weight:700;color:${col}">${b.stok}</td>
+        <td style="color:#888">${b.limit}</td>
+        <td>${badge}</td>
+        <td><div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${col}"></div></div></td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+</table>
+
+<div class="footer">
+  <span>SO Perlengkapan Umroh · Assyifa Tour & Travel</span>
+  <span>${tglCetak}</span>
+</div>
+</div></body></html>`;
+
+  const w=window.open('','_blank','width=820,height=680');
+  if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);}
+  else showToast('Izinkan popup di browser untuk mencetak!','error');
 }
 
 async function loadStok(){
