@@ -8,23 +8,16 @@
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memuat stok...</p></div>
-
-<div class="topbar" id="topbar"></div>
+<nav class="navbar" id="navbar"></nav>
 
 <div class="container">
   <div class="metrics" id="metrics-bar"></div>
-
   <div class="toolbar">
     <input type="text" placeholder="🔍 Cari nama barang..." oninput="filterSO(this.value)"/>
     <button class="btn btn-sm" id="btn-update" onclick="openModal()" style="display:none">✏️ Update Stok</button>
   </div>
-
-  <div class="card" id="so-list">
-    <div class="empty"><div class="empty-icon">📦</div>Memuat data stok...</div>
-  </div>
-  <p style="font-size:11px;color:var(--tx3);text-align:center;margin-top:-8px">
-    💡 Harga adalah pricelist referensi — tidak mempengaruhi perhitungan sistem.
-  </p>
+  <div class="card" id="so-list"><div class="empty"><div class="empty-icon">📦</div>Memuat data stok...</div></div>
+  <p style="font-size:11px;color:var(--tx3);text-align:center;margin-top:-8px">💡 Harga adalah pricelist referensi saja.</p>
 </div>
 
 <!-- Modal Update Stok -->
@@ -32,8 +25,7 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>✏️ Update Stok & Limit Restock</h3>
-    <div style="display:grid;grid-template-columns:1fr 58px 58px;gap:4px;
-                padding-bottom:8px;border-bottom:0.5px solid var(--border);margin-bottom:4px">
+    <div style="display:grid;grid-template-columns:1fr 58px 58px;gap:4px;padding-bottom:8px;border-bottom:0.5px solid var(--border);margin-bottom:4px">
       <span style="font-size:11px;color:var(--tx2);font-weight:600">Barang</span>
       <span style="font-size:11px;color:var(--tx2);text-align:center;font-weight:600">Stok</span>
       <span style="font-size:11px;color:var(--tx2);text-align:center;font-weight:600">Limit</span>
@@ -49,100 +41,62 @@
 <script src="config.js"></script>
 <script>
 if (!requireLogin()) throw new Error('not logged in');
-renderTopbar('📦 Stok Opname', 'Data barang gudang');
-
+renderNavbar('stok.html');
 const user = getUser();
 if (user.role === 'admin') document.getElementById('btn-update').style.display = '';
 
-let stokData = [];
-let soFilter = '';
+let stokData = [], soFilter = '';
 
 function stokBadge(b) {
-  if (b.stok == 0)        return `<span class="badge b-danger">Habis</span>`;
-  if (b.stok <= b.limit)  return `<span class="badge b-warn">Restock!</span>`;
+  if (b.stok==0)       return `<span class="badge b-danger">Habis</span>`;
+  if (b.stok<=b.limit) return `<span class="badge b-warn">Restock!</span>`;
   return `<span class="badge b-ok">Aman</span>`;
 }
-
 function renderMetrics() {
-  const aman  = stokData.filter(b => b.stok >  b.limit).length;
-  const rst   = stokData.filter(b => b.stok >  0 && b.stok <= b.limit).length;
-  const habis = stokData.filter(b => b.stok == 0).length;
-  document.getElementById('metrics-bar').innerHTML = [
-    { lbl:'Total Item',    val: stokData.length, sub:'jenis barang' },
-    { lbl:'Stok Aman',     val: aman,  sub:'item' },
-    { lbl:'Perlu Restock', val: rst,   sub:'item' },
-    { lbl:'Habis',         val: habis, sub:'item' },
-  ].map(m=>`<div class="metric">
-    <div class="lbl">${m.lbl}</div><div class="val">${m.val}</div><div class="sub">${m.sub}</div>
-  </div>`).join('');
+  const aman=stokData.filter(b=>b.stok>b.limit).length, rst=stokData.filter(b=>b.stok>0&&b.stok<=b.limit).length, habis=stokData.filter(b=>b.stok==0).length;
+  document.getElementById('metrics-bar').innerHTML=[{lbl:'Total Item',val:stokData.length,sub:'jenis barang'},{lbl:'Stok Aman',val:aman,sub:'item'},{lbl:'Perlu Restock',val:rst,sub:'item'},{lbl:'Habis',val:habis,sub:'item'}]
+    .map(m=>`<div class="metric"><div class="lbl">${m.lbl}</div><div class="val">${m.val}</div><div class="sub">${m.sub}</div></div>`).join('');
 }
-
-function renderSO(q = '') {
-  const list = stokData.filter(b => b.nama.toLowerCase().includes(q.toLowerCase()));
-  if (!list.length) {
-    document.getElementById('so-list').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>Barang tidak ditemukan.</div>';
-    return;
-  }
-  document.getElementById('so-list').innerHTML = list.map(b => {
-    const pct = Math.min(100, Math.round(b.stok / Math.max(b.limit * 2, 20) * 100));
-    const col = b.stok <= b.limit ? '#E24B4A' : '#1D9E75';
+function renderSO(q='') {
+  const list=stokData.filter(b=>b.nama.toLowerCase().includes(q.toLowerCase()));
+  if (!list.length) { document.getElementById('so-list').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>Barang tidak ditemukan.</div>'; return; }
+  document.getElementById('so-list').innerHTML=list.map(b=>{
+    const pct=Math.min(100,Math.round(b.stok/Math.max(b.limit*2,20)*100));
+    const col=b.stok<=b.limit?'#E24B4A':'#1D9E75';
     return `<div class="so-row">
       <span class="so-no">${stokData.indexOf(b)+1}</span>
-      <div class="so-info">
-        <div class="so-name">${b.nama}</div>
-        <div class="so-price">${rp(b.harga)}</div>
-        <div class="pw"><div class="pb" style="width:${pct}%;background:${col}"></div></div>
-      </div>
-      <div class="so-right">
-        <div class="so-stok">${b.stok}</div>
-        ${stokBadge(b)}
-        <span style="font-size:10px;color:var(--tx3)">limit: ${b.limit}</span>
-      </div>
+      <div class="so-info"><div class="so-name">${b.nama}</div><div class="so-price">${rp(b.harga)}</div>
+        <div class="pw"><div class="pb" style="width:${pct}%;background:${col}"></div></div></div>
+      <div class="so-right"><div class="so-stok">${b.stok}</div>${stokBadge(b)}<span style="font-size:10px;color:var(--tx3)">limit: ${b.limit}</span></div>
     </div>`;
   }).join('');
 }
-function filterSO(q) { soFilter = q; renderSO(q); }
-
+function filterSO(q) { soFilter=q; renderSO(q); }
 function openModal() {
-  document.getElementById('stok-edit-body').innerHTML = stokData.map((b,i) => `
-    <div class="stok-edit-row">
-      <span class="stok-edit-name">${b.nama}</span>
+  document.getElementById('stok-edit-body').innerHTML=stokData.map((b,i)=>`
+    <div class="stok-edit-row"><span class="stok-edit-name">${b.nama}</span>
       <input class="stok-inp" type="number" min="0" id="se-s-${i}" value="${b.stok}"/>
       <input class="stok-inp" type="number" min="0" id="se-l-${i}" value="${b.limit}"/>
     </div>`).join('');
   document.getElementById('modal-stok').classList.add('open');
 }
 function closeModal() { document.getElementById('modal-stok').classList.remove('open'); }
-
 async function saveStok() {
-  const updates = stokData.map((b,i) => ({
-    nama:  b.nama,
-    stok:  parseInt(document.getElementById(`se-s-${i}`).value) || 0,
-    limit: parseInt(document.getElementById(`se-l-${i}`).value) || 0,
-  }));
+  const updates=stokData.map((b,i)=>({nama:b.nama,stok:parseInt(document.getElementById(`se-s-${i}`).value)||0,limit:parseInt(document.getElementById(`se-l-${i}`).value)||0}));
   showLoading(true);
   try {
-    const res = await apiPost({ action: 'updateStok', data: updates });
-    if (res.ok) {
-      stokData.forEach((b,i) => { b.stok = updates[i].stok; b.limit = updates[i].limit; });
-      renderSO(soFilter); renderMetrics();
-      closeModal();
-      showToast('Stok berhasil diupdate! ✅', 'success');
-    } else { showToast('Gagal menyimpan stok.', 'error'); }
-  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+    const res=await apiPost({action:'updateStok',data:updates});
+    if (res.ok) { stokData.forEach((b,i)=>{b.stok=updates[i].stok;b.limit=updates[i].limit;}); renderSO(soFilter); renderMetrics(); closeModal(); showToast('Stok berhasil diupdate! ✅','success'); }
+    else showToast('Gagal menyimpan stok.','error');
+  } catch(e) { showToast('Gagal terhubung.','error'); }
   showLoading(false);
 }
-
 async function loadStok() {
   showLoading(true);
-  try {
-    const res = await apiGet({ action: 'getStok' });
-    if (res.ok) { stokData = res.data; renderMetrics(); renderSO(); }
-    else showToast('Gagal memuat stok.', 'error');
-  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  try { const res=await apiGet({action:'getStok'}); if(res.ok){stokData=res.data;renderMetrics();renderSO();}else showToast('Gagal memuat stok.','error'); }
+  catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
-
 loadStok();
 </script>
 </body>
