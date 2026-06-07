@@ -5,61 +5,124 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Pengambilan Barang — SO Perlengkapan Umroh</title>
 <link rel="stylesheet" href="style.css"/>
+<style>
+  .standby-wrap { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  @media (max-width:480px) { .standby-wrap { grid-template-columns:1fr; } }
+
+  .standby-card {
+    border-radius:var(--rl); padding:1.25rem;
+    border:1.5px solid; margin-bottom:0;
+  }
+  .standby-card.lk { background:linear-gradient(135deg,#e6f1fb,#cfe2f3); border-color:#378ADD; }
+  .standby-card.pr { background:linear-gradient(135deg,#fbeaf0,#f4c0d1); border-color:#D4537E; }
+  @media (prefers-color-scheme:dark) {
+    .standby-card.lk { background:linear-gradient(135deg,#0c2d4a,#0a2038); border-color:#378ADD; }
+    .standby-card.pr { background:linear-gradient(135deg,#3d1528,#2a0e1c); border-color:#D4537E; }
+  }
+
+  .sc-gender { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+  .sc-gender.lk { color:#185fa5; }
+  .sc-gender.pr { color:#993556; }
+  .sc-title { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .sc-title.lk { color:#185fa5; }
+  .sc-title.pr { color:#993556; }
+  .sc-stok { font-size:36px; font-weight:800; line-height:1; margin:8px 0 2px; }
+  .sc-stok.lk { color:#185fa5; }
+  .sc-stok.pr { color:#993556; }
+  .sc-label { font-size:11px; color:var(--tx2); margin-bottom:12px; }
+
+  .sc-actions { display:flex; flex-direction:column; gap:8px; }
+  .sc-siapkan { display:flex; gap:6px; align-items:center; }
+  .sc-siapkan input { width:54px; padding:6px 8px; font-size:13px; border:0.5px solid var(--border2); border-radius:8px; background:var(--bg); color:var(--tx); text-align:center; min-height:36px; }
+  .sc-btn { padding:7px 12px; font-size:12px; min-height:36px; border-radius:8px; border:0.5px solid; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:4px; font-family:inherit; }
+  .sc-btn.lk { background:#e6f1fb; color:#185fa5; border-color:#378ADD; }
+  .sc-btn.lk:hover { background:#cfe2f3; }
+  .sc-btn.pr { background:#fbeaf0; color:#993556; border-color:#D4537E; }
+  .sc-btn.pr:hover { background:#f4c0d1; }
+  .sc-btn-ambil { width:100%; justify-content:center; padding:10px; font-size:13px; min-height:40px; }
+
+  .ambil-form { margin-top:10px; display:none; border-top:0.5px solid var(--border); padding-top:10px; }
+  .ambil-form.open { display:block; }
+  .ambil-form .fr { margin-bottom:8px; }
+  .ambil-form .fr label { font-size:11px; }
+  .ambil-form .fr input, .ambil-form .fr select { min-height:40px; font-size:13px; padding:8px 11px; }
+
+  .divider-label { text-align:center; font-size:13px; color:var(--tx2); margin:4px 0 14px; }
+
+  .items-preview { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+  .items-pill { font-size:11px; padding:2px 8px; border-radius:99px; font-weight:500; }
+  .items-pill.lk { background:rgba(55,138,221,0.12); color:#185fa5; border:0.5px solid rgba(55,138,221,0.3); }
+  .items-pill.pr { background:rgba(212,83,126,0.12); color:#993556; border:0.5px solid rgba(212,83,126,0.3); }
+</style>
 </head>
 <body>
-<div id="loading" style="display:none"><div class="spinner"></div><p>Menyimpan...</p></div>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Memproses...</p></div>
 <nav class="navbar" id="navbar"></nav>
 
 <div class="container">
 
-  <!-- ══ FULL SET READY CARD ══ -->
-  <div class="fullset-card">
-    <div class="fs-title">🟢 Koper Full Set Ready</div>
-    <div class="fs-sub">Perlengkapan sudah disiapkan di depan — jamaah bisa langsung ambil</div>
-    <div class="fullset-counter">
-      <div>
-        <div class="fs-count" id="fs-count">—</div>
-        <div class="fs-count-label">unit siap di depan</div>
+  <!-- ══ KOPER STANDBY ══ -->
+  <div class="section-label">🧳 Koper Standby — Siap di Depan</div>
+  <div class="standby-wrap">
+
+    <!-- LK -->
+    <div class="standby-card lk">
+      <div class="sc-gender lk">👨 Laki-laki</div>
+      <div class="sc-title lk">Koper Standby LK</div>
+      <div class="sc-stok lk" id="stok-lk">—</div>
+      <div class="sc-label">unit siap di depan</div>
+      <div class="items-preview" id="items-lk"></div>
+      <div class="sc-actions">
+        <div class="sc-siapkan">
+          <input type="number" id="siap-lk-qty" min="1" value="1" placeholder="jml"/>
+          <button class="sc-btn lk" onclick="siapkanStandby('LK')">📦 Siapkan dari Gudang</button>
+        </div>
+        <button class="sc-btn lk sc-btn-ambil" onclick="toggleAmbilForm('LK')">
+          🛍️ Jamaah Ambil Koper Standby LK
+        </button>
       </div>
-      <div class="counter-btns" id="counter-btns" style="display:none">
-        <button class="counter-btn" onclick="ubahFullSet(1)" title="Tambah">+</button>
-        <button class="counter-btn" onclick="ubahFullSet(-1)" title="Kurangi">−</button>
-      </div>
-    </div>
-    <div class="fs-items" id="fs-items-lk"></div>
-    <hr class="divider"/>
-    <div class="card-title" style="font-size:13px;margin-bottom:10px">⚡ Ambil Full Set Langsung</div>
-    <div class="fr">
-      <label>Nama Jamaah</label>
-      <input type="text" id="fs-nama" placeholder="cth: Bambang Sutrisno"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="fr" style="margin-bottom:0">
-        <label>Jenis Kelamin</label>
-        <select id="fs-jk">
-          <option value="LK">Laki-laki</option>
-          <option value="PR">Perempuan</option>
-        </select>
-      </div>
-      <div class="fr" style="margin-bottom:0">
-        <label>Bulan Keberangkatan</label>
-        <input type="text" id="fs-bln" placeholder="cth: Juni 2026"/>
+      <div class="ambil-form" id="form-lk">
+        <div class="fr"><label>Nama Jamaah</label><input type="text" id="lk-nama" placeholder="cth: Bambang Sutrisno"/></div>
+        <div class="fr"><label>Bulan Keberangkatan</label><input type="text" id="lk-bln" placeholder="cth: Juni 2026"/></div>
+        <button class="sc-btn lk sc-btn-ambil" onclick="ambilStandby('LK')" style="margin-top:4px">
+          ✅ Konfirmasi Ambil
+        </button>
       </div>
     </div>
-    <button class="btn btn-green btn-block" style="margin-top:12px" onclick="ambilFullSet()">
-      ✅ Ambil Full Set (1 Koper Lengkap)
-    </button>
+
+    <!-- PR -->
+    <div class="standby-card pr">
+      <div class="sc-gender pr">👩 Perempuan</div>
+      <div class="sc-title pr">Koper Standby PR</div>
+      <div class="sc-stok pr" id="stok-pr">—</div>
+      <div class="sc-label">unit siap di depan</div>
+      <div class="items-preview" id="items-pr"></div>
+      <div class="sc-actions">
+        <div class="sc-siapkan">
+          <input type="number" id="siap-pr-qty" min="1" value="1" placeholder="jml"/>
+          <button class="sc-btn pr" onclick="siapkanStandby('PR')">📦 Siapkan dari Gudang</button>
+        </div>
+        <button class="sc-btn pr sc-btn-ambil" onclick="toggleAmbilForm('PR')">
+          🛍️ Jamaah Ambil Koper Standby PR
+        </button>
+      </div>
+      <div class="ambil-form" id="form-pr">
+        <div class="fr"><label>Nama Jamaah</label><input type="text" id="pr-nama" placeholder="cth: Siti Aminah"/></div>
+        <div class="fr"><label>Bulan Keberangkatan</label><input type="text" id="pr-bln" placeholder="cth: Juni 2026"/></div>
+        <button class="sc-btn pr sc-btn-ambil" onclick="ambilStandby('PR')" style="margin-top:4px">
+          ✅ Konfirmasi Ambil
+        </button>
+      </div>
+    </div>
+
   </div>
 
-  <div style="text-align:center;font-size:13px;color:var(--tx2);margin:-4px 0 14px">— atau ambil satuan di bawah —</div>
-
   <!-- ══ PENGAMBILAN SATUAN ══ -->
+  <div class="divider-label">— atau ambil satuan langsung dari gudang —</div>
+
   <div class="card">
-    <div class="card-title">👤 Data Jamaah — Pengambilan Satuan</div>
-    <div class="fr">
-      <label>Nama Jamaah</label>
-      <input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/>
-    </div>
+    <div class="card-title">📋 Pengambilan Satuan dari Gudang</div>
+    <div class="fr"><label>Nama Jamaah</label><input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="fr" style="margin-bottom:0">
         <label>Jenis Kelamin</label>
@@ -93,58 +156,85 @@
 <script>
 if (!requireLogin()) throw new Error('not logged in');
 renderNavbar('ambil.html');
-
 const user = getUser();
-let fsJumlah = 0;
 
-// Tampilkan tombol +/- hanya untuk admin
-if (user.role === 'admin') {
-  document.getElementById('counter-btns').style.display = 'flex';
+const ITEMS_LK = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Batik LK','Tumbler','Botol Spray','Buku Panduan','Topi LK'];
+const ITEMS_PR = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Mukena','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi PR'];
+
+let standbyLK = 0, standbyPR = 0;
+
+// ── Render item preview ───────────────────────────────────────
+function renderItemsPreview() {
+  document.getElementById('items-lk').innerHTML = ITEMS_LK.map(i => `<span class="items-pill lk">${i}</span>`).join('');
+  document.getElementById('items-pr').innerHTML = ITEMS_PR.map(i => `<span class="items-pill pr">${i}</span>`).join('');
 }
 
-// Render preview item full set
-function renderFSItems() {
-  document.getElementById('fs-items-lk').innerHTML =
-    FULLSET_ITEMS_LK.map(i => `<span class="fs-pill">${i}</span>`).join('');
-}
-
-async function loadFullSet() {
+// ── Load stok standby ─────────────────────────────────────────
+async function loadStandby() {
   try {
-    const res = await apiGet({ action: 'getFullSet' });
-    if (res.ok) { fsJumlah = res.jumlah; document.getElementById('fs-count').textContent = fsJumlah; }
-  } catch(e) { document.getElementById('fs-count').textContent = '?'; }
+    const res = await apiGet({ action: 'getStandby' });
+    if (res.ok) {
+      standbyLK = res.lk; standbyPR = res.pr;
+      document.getElementById('stok-lk').textContent = standbyLK;
+      document.getElementById('stok-pr').textContent = standbyPR;
+    }
+  } catch(e) {
+    document.getElementById('stok-lk').textContent = '?';
+    document.getElementById('stok-pr').textContent = '?';
+  }
 }
 
-async function ubahFullSet(delta) {
-  const baru = Math.max(0, fsJumlah + delta);
+// ── Toggle form ambil standby ─────────────────────────────────
+function toggleAmbilForm(gender) {
+  const id  = gender === 'LK' ? 'form-lk' : 'form-pr';
+  const el  = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+// ── Siapkan koper standby dari gudang ────────────────────────
+async function siapkanStandby(gender) {
+  const inputId = gender === 'LK' ? 'siap-lk-qty' : 'siap-pr-qty';
+  const jumlah  = parseInt(document.getElementById(inputId).value) || 0;
+  if (jumlah < 1) { showToast('Masukkan jumlah minimal 1!', 'error'); return; }
+  if (!confirm(`Siapkan ${jumlah} Koper Standby ${gender} dari gudang?\nStok gudang akan berkurang ${jumlah}× tiap item.`)) return;
   showLoading(true);
   try {
-    const res = await apiPost({ action: 'updateFullSet', jumlah: baru });
-    if (res.ok) { fsJumlah = res.jumlah; document.getElementById('fs-count').textContent = fsJumlah; showToast(`Full Set Ready: ${fsJumlah} unit`, 'success'); }
-    else showToast(res.msg || 'Gagal update', 'error');
+    const res = await apiPost({ action: 'siapkanStandby', gender, jumlah });
+    if (res.ok) {
+      standbyLK = res.standby_lk !== undefined ? res.standby_lk : standbyLK;
+      standbyPR = res.standby_pr !== undefined ? res.standby_pr : standbyPR;
+      if (gender === 'LK') document.getElementById('stok-lk').textContent = standbyLK;
+      else document.getElementById('stok-pr').textContent = standbyPR;
+      document.getElementById(inputId).value = 1;
+      showToast(`✅ ${jumlah} Koper Standby ${gender} berhasil disiapkan!`, 'success');
+    } else { showToast(res.msg || 'Gagal menyiapkan.', 'error'); }
   } catch(e) { showToast('Gagal terhubung.', 'error'); }
   showLoading(false);
 }
 
-async function ambilFullSet() {
-  const nama = document.getElementById('fs-nama').value.trim();
-  const jk   = document.getElementById('fs-jk').value;
-  const bln  = document.getElementById('fs-bln').value.trim();
+// ── Ambil koper standby (jamaah) ─────────────────────────────
+async function ambilStandby(gender) {
+  const namaId = gender === 'LK' ? 'lk-nama' : 'pr-nama';
+  const blnId  = gender === 'LK' ? 'lk-bln'  : 'pr-bln';
+  const nama   = document.getElementById(namaId).value.trim();
+  const bln    = document.getElementById(blnId).value.trim();
+  const stok   = gender === 'LK' ? standbyLK : standbyPR;
   if (!nama) { showToast('Nama jamaah wajib diisi!', 'error'); return; }
   if (!bln)  { showToast('Bulan keberangkatan wajib diisi!', 'error'); return; }
-  if (fsJumlah <= 0) { showToast('Stok Full Set Ready habis! Tambah dulu.', 'error'); return; }
-  const barang  = jk === 'LK' ? FULLSET_ITEMS_LK : FULLSET_ITEMS_PR;
+  if (stok <= 0) { showToast(`Koper Standby ${gender} habis! Siapkan dari gudang dulu.`, 'error'); return; }
+  const barang  = gender === 'LK' ? ITEMS_LK : ITEMS_PR;
   const tanggal = new Date().toISOString().split('T')[0];
   showLoading(true);
   try {
-    const res = await apiPost({ action:'ambilFullSet', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:jk, bulan_keberangkatan:bln, barang, petugas:user.username, tipe:'fullset' } });
+    const res = await apiPost({ action:'ambilStandby', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:gender, bulan_keberangkatan:bln, barang, petugas:user.username } });
     if (res.ok) {
-      fsJumlah = res.sisaReady;
-      document.getElementById('fs-count').textContent = fsJumlah;
-      document.getElementById('fs-nama').value = '';
-      document.getElementById('fs-bln').value  = '';
-      showToast(`✅ Full Set berhasil dicatat! Sisa ready: ${fsJumlah}`, 'success');
-      setTimeout(() => window.location.href = 'history.html', 1400);
+      if (gender === 'LK') { standbyLK = res.sisa; document.getElementById('stok-lk').textContent = standbyLK; }
+      else { standbyPR = res.sisa; document.getElementById('stok-pr').textContent = standbyPR; }
+      document.getElementById(namaId).value = '';
+      document.getElementById(blnId).value  = '';
+      document.getElementById(gender==='LK'?'form-lk':'form-pr').classList.remove('open');
+      showToast(`✅ Ambil Standby ${gender} berhasil! Sisa: ${res.sisa}`, 'success');
+      setTimeout(() => window.location.href = 'history.html', 1300);
     } else { showToast(res.msg || 'Gagal menyimpan.', 'error'); }
   } catch(e) { showToast('Gagal terhubung.', 'error'); }
   showLoading(false);
@@ -173,7 +263,6 @@ function getItemName(key, jk) {
   if (key==='Topi')        return jk==='LK'?'Topi LK':'Topi PR';
   return key;
 }
-
 function renderChecklist() {
   const jk = document.getElementById('a-jk').value;
   document.getElementById('cl-list').innerHTML = clItems.map(ci => {
@@ -202,16 +291,21 @@ async function simpanPengambilan() {
   const tanggal = new Date().toISOString().split('T')[0];
   showLoading(true);
   try {
-    const res = await apiPost({ action:'simpanLog', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:jk, bulan_keberangkatan:bln, barang, petugas:user.username, tipe:'satuan' } });
-    if (res.ok) { showToast('Pengambilan berhasil disimpan! ✅','success'); clChecked={}; document.getElementById('a-nama').value=''; document.getElementById('a-bln').value=''; renderChecklist(); setTimeout(()=>window.location.href='history.html',1200); }
-    else showToast('Gagal menyimpan. Coba lagi.','error');
+    const res = await apiPost({ action:'simpanLog', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:jk, bulan_keberangkatan:bln, barang, petugas:user.username } });
+    if (res.ok) {
+      showToast('Pengambilan satuan berhasil disimpan! ✅','success');
+      clChecked={}; document.getElementById('a-nama').value=''; document.getElementById('a-bln').value='';
+      renderChecklist();
+      setTimeout(()=>window.location.href='history.html',1200);
+    } else showToast('Gagal menyimpan.','error');
   } catch(e) { showToast('Gagal terhubung.','error'); }
   showLoading(false);
 }
 
+// ── Init ──────────────────────────────────────────────────────
 renderChecklist();
-renderFSItems();
-loadFullSet();
+renderItemsPreview();
+loadStandby();
 </script>
 </body>
 </html>
