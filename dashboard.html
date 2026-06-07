@@ -6,119 +6,67 @@
 <title>Dashboard — SO Perlengkapan Umroh</title>
 <link rel="stylesheet" href="style.css"/>
 <style>
-  .topbar .back-btn { display: none; }
-  .welcome { margin-bottom: 20px; }
-  .welcome h2 { font-size: 20px; font-weight: 700; }
-  .welcome p { font-size: 13px; color: var(--tx2); margin-top: 4px; }
-  .alert-restock {
-    background: var(--warn); border: 0.5px solid var(--warn-tx);
-    border-radius: var(--r); padding: 12px 14px; margin-bottom: 14px;
-    font-size: 13px; color: var(--warn-tx); display: none;
-  }
-  .alert-restock strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  .alert-restock { background:var(--warn); border:0.5px solid var(--warn-tx); border-radius:var(--r); padding:12px 14px; margin-bottom:14px; font-size:13px; color:var(--warn-tx); display:none; }
+  .alert-restock strong { display:block; margin-bottom:4px; font-size:14px; }
+  .welcome { margin-bottom:16px; }
+  .welcome h2 { font-size:20px; font-weight:700; }
+  .welcome p { font-size:13px; color:var(--tx2); margin-top:4px; }
 </style>
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memuat...</p></div>
-
-<div class="topbar" id="topbar"></div>
+<nav class="navbar" id="navbar"></nav>
 
 <div class="container">
   <div class="welcome">
     <h2>Selamat datang! 👋</h2>
-    <p id="welcome-sub">Memuat data...</p>
+    <p id="welcome-sub">Memuat ringkasan stok...</p>
   </div>
-
   <div class="metrics" id="metrics-bar"></div>
-
   <div class="alert-restock" id="alert-restock">
-    <strong>⚠️ Perhatian — Stok Perlu Restock</strong>
+    <strong>⚠️ Stok Perlu Restock</strong>
     <span id="alert-restock-list"></span>
   </div>
-
   <div class="section-label">Menu Utama</div>
   <div class="nav-grid">
-    <a href="stok.html" class="nav-card">
-      <span class="nav-icon">📦</span>
-      <div class="nav-label">Stok Opname</div>
-      <div class="nav-sub">Lihat & update stok</div>
-    </a>
-    <a href="ambil.html" class="nav-card">
-      <span class="nav-icon">🛍️</span>
-      <div class="nav-label">Pengambilan</div>
-      <div class="nav-sub">Catat barang keluar</div>
-    </a>
-    <a href="history.html" class="nav-card">
-      <span class="nav-icon">📋</span>
-      <div class="nav-label">History Log</div>
-      <div class="nav-sub">Riwayat pengambilan</div>
-    </a>
-    <a href="laporan.html" class="nav-card">
-      <span class="nav-icon">📄</span>
-      <div class="nav-label">Laporan</div>
-      <div class="nav-sub">Cetak PDF bulanan</div>
-    </a>
+    <a href="stok.html" class="nav-card"><span class="nav-card-icon">📦</span><div class="nav-card-label">Stok Opname</div><div class="nav-card-sub">Lihat & update stok</div></a>
+    <a href="ambil.html" class="nav-card"><span class="nav-card-icon">🛍️</span><div class="nav-card-label">Pengambilan</div><div class="nav-card-sub">Catat barang keluar</div></a>
+    <a href="history.html" class="nav-card"><span class="nav-card-icon">📋</span><div class="nav-card-label">History Log</div><div class="nav-card-sub">Riwayat pengambilan</div></a>
+    <a href="laporan.html" class="nav-card"><span class="nav-card-icon">📄</span><div class="nav-card-label">Laporan</div><div class="nav-card-sub">Cetak PDF bulanan</div></a>
   </div>
 </div>
 
 <script src="config.js"></script>
 <script>
 if (!requireLogin()) throw new Error('not logged in');
-
+renderNavbar('dashboard.html');
 const user = getUser();
-
-// Topbar tanpa tombol back
-document.getElementById('topbar').innerHTML = `
-  <div class="tb-left">
-    <div>
-      <div class="tb-title">🧳 SO Perlengkapan</div>
-      <div class="tb-sub">Travel Umroh</div>
-    </div>
-  </div>
-  <div class="tb-right">
-    <div class="user-chip" onclick="doLogout()">
-      <div class="avatar">${initials(user.username)}</div>
-      <span class="uname">${user.username.split(' ')[0]}</span>
-    </div>
-  </div>`;
-
-document.getElementById('welcome-sub').textContent =
-  `Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
+document.getElementById('welcome-sub').textContent = `Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
 
 async function loadDashboard() {
   showLoading(true);
   try {
-    const res = await apiGet({ action: 'getStok' });
-    if (!res.ok) { showToast('Gagal memuat data', 'error'); showLoading(false); return; }
+    const res = await apiGet({ action:'getStok' });
+    if (!res.ok) { showToast('Gagal memuat data','error'); showLoading(false); return; }
     const data = res.data;
-
-    const aman  = data.filter(b => b.stok >  b.limit).length;
-    const rst   = data.filter(b => b.stok >  0 && b.stok <= b.limit).length;
-    const habis = data.filter(b => b.stok == 0).length;
-
+    const aman  = data.filter(b=>b.stok>b.limit).length;
+    const rst   = data.filter(b=>b.stok>0&&b.stok<=b.limit).length;
+    const habis = data.filter(b=>b.stok==0).length;
     document.getElementById('metrics-bar').innerHTML = [
-      { lbl:'Total Item',    val: data.length, sub:'jenis barang' },
-      { lbl:'Stok Aman',     val: aman,        sub:'item' },
-      { lbl:'Perlu Restock', val: rst,         sub:'item' },
-      { lbl:'Habis',         val: habis,       sub:'item' },
-    ].map(m=>`<div class="metric">
-      <div class="lbl">${m.lbl}</div>
-      <div class="val">${m.val}</div>
-      <div class="sub">${m.sub}</div>
-    </div>`).join('');
-
-    // Alert restock
-    const restockItems = data.filter(b => b.stok <= b.limit);
-    if (restockItems.length > 0) {
+      {lbl:'Total Item', val:data.length, sub:'jenis barang'},
+      {lbl:'Stok Aman',  val:aman,  sub:'item'},
+      {lbl:'Restock!',   val:rst,   sub:'item'},
+      {lbl:'Habis',      val:habis, sub:'item'},
+    ].map(m=>`<div class="metric"><div class="lbl">${m.lbl}</div><div class="val">${m.val}</div><div class="sub">${m.sub}</div></div>`).join('');
+    const restockItems = data.filter(b=>b.stok<=b.limit);
+    if (restockItems.length) {
       const el = document.getElementById('alert-restock');
       el.style.display = 'block';
-      document.getElementById('alert-restock-list').textContent =
-        restockItems.map(b => `${b.nama} (sisa ${b.stok})`).join(', ');
+      document.getElementById('alert-restock-list').textContent = restockItems.map(b=>`${b.nama} (sisa ${b.stok})`).join(', ');
     }
-  } catch(e) { showToast('Gagal memuat data', 'error'); }
+  } catch(e) { showToast('Gagal terhubung','error'); }
   showLoading(false);
 }
-
 loadDashboard();
 </script>
 </body>
