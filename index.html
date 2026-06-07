@@ -6,14 +6,14 @@
 <title>Login — SO Perlengkapan Umroh</title>
 <link rel="stylesheet" href="style.css"/>
 <style>
-  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
-  .login-wrap { width: 100%; max-width: 380px; }
-  .login-logo { text-align: center; margin-bottom: 2rem; }
-  .login-logo .icon { font-size: 52px; display: block; margin-bottom: 10px; }
-  .login-logo h1 { font-size: 22px; font-weight: 700; }
-  .login-logo p { font-size: 13px; color: var(--tx2); margin-top: 4px; }
-  .login-card { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--rl); padding: 2rem; box-shadow: var(--shadow); }
-  .footer-note { text-align: center; font-size: 11px; color: var(--tx3); margin-top: 1.5rem; }
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+  .login-wrap { width:100%; max-width:380px; }
+  .login-logo { text-align:center; margin-bottom:2rem; }
+  .login-logo .icon { font-size:52px; display:block; margin-bottom:10px; }
+  .login-logo h1 { font-size:22px; font-weight:700; }
+  .login-logo p { font-size:13px; color:var(--tx2); margin-top:4px; }
+  .login-card { background:var(--bg); border:0.5px solid var(--border2); border-radius:var(--rl); padding:2rem; box-shadow:var(--shadow); }
+  .footer-note { text-align:center; font-size:11px; color:var(--tx3); margin-top:1.5rem; }
 </style>
 </head>
 <body>
@@ -41,18 +41,14 @@
              onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div class="err-msg" id="login-err"></div>
-    <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doLogin()">
-      🔑 Masuk
-    </button>
+    <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doLogin()">🔑 Masuk</button>
   </div>
-  <p class="footer-note">© 2026 SO Perlengkapan Umroh</p>
+  <p class="footer-note">© 2026 SO Perlengkapan Umroh · Assyifa Tour & Travel</p>
 </div>
 
 <script src="config.js"></script>
 <script>
-  // Kalau sudah login, langsung ke dashboard
   if (getUser()) window.location.href = 'dashboard.html';
-
   async function doLogin() {
     const user = document.getElementById('login-user').value;
     const pin  = document.getElementById('login-pin').value;
@@ -63,16 +59,10 @@
     showLoading(true);
     try {
       const res = await apiGet({ action:'login', user, pin });
-      if (!res.ok) {
-        err.style.display='block'; err.textContent='PIN salah. Coba lagi.';
-        showLoading(false); return;
-      }
+      if (!res.ok) { err.style.display='block'; err.textContent='PIN salah. Coba lagi.'; showLoading(false); return; }
       setUser({ username: res.username, role: res.role });
       window.location.href = 'dashboard.html';
-    } catch(e) {
-      err.style.display='block'; err.textContent='Gagal terhubung. Periksa koneksi internet.';
-      showLoading(false);
-    }
+    } catch(e) { err.style.display='block'; err.textContent='Gagal terhubung. Periksa koneksi.'; showLoading(false); }
   }
 </script>
 </body>
