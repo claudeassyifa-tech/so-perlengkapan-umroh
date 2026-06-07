@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Laporan — SO Perlengkapan Umroh</title>
+<title>Laporan — SO Perlengkapan</title>
 <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
@@ -12,27 +12,80 @@
 
 <div class="container">
   <div class="card">
-    <div class="card-title">📄 Cetak Laporan Bulanan</div>
-    <div class="fr">
-      <label>Pilih Bulan Keberangkatan</label>
-      <select id="lap-bln" onchange="previewLaporan()">
-        <option value="">— Pilih bulan —</option>
-      </select>
+    <div class="card-title"><i class="ti ti-file-text" aria-hidden="true"></i> Cetak Laporan</div>
+
+    <!-- Mode tabs -->
+    <div class="lap-mode-tabs">
+      <button class="lap-mode-btn active" onclick="setMode('bulan')" id="mode-bulan">📅 Per Bulan</button>
+      <button class="lap-mode-btn" onclick="setMode('minggu')" id="mode-minggu">📆 Per Minggu</button>
+      <button class="lap-mode-btn" onclick="setMode('custom')" id="mode-custom">🗓️ Custom</button>
     </div>
+
+    <!-- Per Bulan -->
+    <div id="filter-bulan">
+      <div class="fr">
+        <label>Bulan Keberangkatan</label>
+        <select id="lap-bln" onchange="previewLaporan()"><option value="">— Pilih bulan —</option></select>
+      </div>
+    </div>
+
+    <!-- Per Minggu -->
+    <div id="filter-minggu" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fr"><label>Bulan</label>
+          <select id="lap-mgg-bln">
+            <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+            <option value="3">April</option><option value="4">Mei</option><option value="5" selected>Juni</option>
+            <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+            <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+          </select>
+        </div>
+        <div class="fr"><label>Tahun</label>
+          <select id="lap-mgg-thn">
+            <option>2025</option><option selected>2026</option><option>2027</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr">
+        <label>Minggu ke-</label>
+        <select id="lap-mgg-ke">
+          <option value="1">Minggu 1 (tgl 1–7)</option>
+          <option value="2">Minggu 2 (tgl 8–14)</option>
+          <option value="3">Minggu 3 (tgl 15–21)</option>
+          <option value="4">Minggu 4 (tgl 22–28)</option>
+          <option value="5">Minggu 5 (tgl 29–31)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Custom -->
+    <div id="filter-custom" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fr"><label>Tanggal Mulai</label><input type="date" id="lap-dari"/></div>
+        <div class="fr"><label>Tanggal Selesai</label><input type="date" id="lap-sampai"/></div>
+      </div>
+    </div>
+
     <p style="font-size:12px;color:var(--tx2);margin-bottom:14px">
-      Laporan mencakup rekapitulasi barang keluar per item (satuan & full set) dan riwayat pengambilan per jamaah.
+      Laporan mencakup rekapitulasi barang keluar, barang masuk (restock), dan riwayat pengambilan jamaah.
     </p>
-    <button class="btn btn-primary btn-block" onclick="cetakPDF()">🖨️ Cetak / Simpan PDF</button>
+    <button class="btn btn-primary btn-block" onclick="cetakPDF()">
+      <i class="ti ti-printer" aria-hidden="true"></i> Cetak / Simpan PDF
+    </button>
   </div>
 
   <div id="lap-preview" style="display:none">
     <div class="section-label">Preview Laporan</div>
     <div class="card">
-      <div class="card-title">📊 A. Rekapitulasi Barang Keluar</div>
+      <div class="card-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> A. Rekapitulasi Barang Keluar</div>
       <div id="lap-rekap"></div>
     </div>
     <div class="card">
-      <div class="card-title">👥 B. Riwayat Pengambilan Jamaah</div>
+      <div class="card-title"><i class="ti ti-package-import" aria-hidden="true"></i> B. Barang Masuk (Restock)</div>
+      <div id="lap-restock"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-users" aria-hidden="true"></i> C. Riwayat Pengambilan Jamaah</div>
       <div id="lap-jamaah"></div>
     </div>
   </div>
@@ -40,134 +93,207 @@
 
 <script src="config.js"></script>
 <script>
-if (!requireLogin()) throw new Error('not logged in');
+if(!requireLogin()) throw new Error('not logged in');
 renderNavbar('laporan.html');
-const user = getUser();
-let logData = [];
+const user=getUser();
+let logData=[], restockData=[], currentMode='bulan';
 
-function updateLapBln() {
-  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(Boolean))];
+function setMode(m){
+  currentMode=m;
+  ['bulan','minggu','custom'].forEach(x=>{
+    document.getElementById(`filter-${x}`).style.display=x===m?'block':'none';
+    document.getElementById(`mode-${x}`).classList.toggle('active',x===m);
+  });
+  document.getElementById('lap-preview').style.display='none';
+}
+
+function updateLapBln(){
+  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(b=>b&&b!=='-'))];
   const sel=document.getElementById('lap-bln');
   sel.innerHTML=`<option value="">— Pilih bulan —</option>`+blns.map(b=>`<option value="${b}">${b}</option>`).join('');
 }
 
-function hitungRekap(bln) {
-  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
+function getFilteredLogs(){
+  if(currentMode==='bulan'){
+    const bln=document.getElementById('lap-bln').value;
+    return {logs:logData.filter(l=>l.bulan_keberangkatan===bln),label:bln,periodeLabel:`Bulan Keberangkatan: ${bln}`};
+  }
+  if(currentMode==='minggu'){
+    const m=parseInt(document.getElementById('lap-mgg-bln').value);
+    const y=parseInt(document.getElementById('lap-mgg-thn').value);
+    const k=parseInt(document.getElementById('lap-mgg-ke').value);
+    const start=((k-1)*7)+1, end=Math.min(k*7,new Date(y,m+1,0).getDate());
+    const dStart=`${y}-${String(m+1).padStart(2,'0')}-${String(start).padStart(2,'0')}`;
+    const dEnd=`${y}-${String(m+1).padStart(2,'0')}-${String(end).padStart(2,'0')}`;
+    const filtered=logData.filter(l=>{const t=l.tanggal||'';return t>=dStart&&t<=dEnd;});
+    const label=`Minggu ${k} ${BLN_FULL[m]} ${y} (${start}–${end} ${BLN_FULL[m]})`;
+    return {logs:filtered,label,periodeLabel:label};
+  }
+  if(currentMode==='custom'){
+    const dari=document.getElementById('lap-dari').value;
+    const sampai=document.getElementById('lap-sampai').value;
+    if(!dari||!sampai)return{logs:[],label:'',periodeLabel:''};
+    const filtered=logData.filter(l=>{const t=l.tanggal||'';return t>=dari&&t<=sampai;});
+    return {logs:filtered,label:`${fmtDate(dari)} s/d ${fmtDate(sampai)}`,periodeLabel:`Periode: ${fmtDate(dari)} — ${fmtDate(sampai)}`};
+  }
+  return {logs:[],label:'',periodeLabel:''};
+}
+
+function getFilteredRestock(label){
+  if(currentMode==='minggu'||currentMode==='custom'){
+    const {logs}=getFilteredLogs();
+    const dates=new Set(logs.map(l=>l.tanggal).filter(Boolean));
+    return restockData.filter(r=>dates.has(r.tanggal)||currentMode==='custom'?
+      (r.tanggal>=(document.getElementById('lap-dari').value||'')&&r.tanggal<=(document.getElementById('lap-sampai').value||''))
+      :dates.has(r.tanggal));
+  }
+  return restockData;
+}
+
+function hitungRekap(logs){
   const map={};
-  filtered.forEach(l=>{const items=Array.isArray(l.barang)?l.barang:[];items.forEach(it=>{map[it]=(map[it]||0)+1;});});
+  logs.forEach(l=>{
+    if(isSiapkan(l.tipe)||isRestock(l.tipe))return;
+    const items=Array.isArray(l.barang)?l.barang:[];
+    items.forEach(it=>{map[it]=(map[it]||0)+1;});
+  });
   return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
 
-function previewLaporan() {
-  const bln=document.getElementById('lap-bln').value;
-  if (!bln){document.getElementById('lap-preview').style.display='none';return;}
-  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
-  if (!filtered.length){document.getElementById('lap-preview').style.display='none';return;}
+function previewLaporan(){
+  const {logs,label}=getFilteredLogs();
+  if(!logs.length){document.getElementById('lap-preview').style.display='none';return;}
   document.getElementById('lap-preview').style.display='block';
-  const rekap=hitungRekap(bln);
-  const totalKeluar=rekap.reduce((s,[,j])=>s+j,0);
-  const fsCount=filtered.filter(l=>l.tipe==='fullset').length;
-  const satCount=filtered.filter(l=>l.tipe!=='fullset').length;
-
+  const rekap=hitungRekap(logs);
+  const total=rekap.reduce((s,[,j])=>s+j,0);
   document.getElementById('lap-rekap').innerHTML=rekap.length
-    ? rekap.map(([nama,jml])=>`<div class="rekap-row"><span>${nama}</span><span><strong>${jml}</strong> pcs</span></div>`).join('')+
-      `<div class="rekap-row" style="border-top:1.5px solid var(--border2);margin-top:4px;padding-top:8px;font-weight:700"><span>Total seluruh item</span><span>${totalKeluar} pcs</span></div>`
-    : '<div class="empty">Tidak ada data.</div>';
+    ?rekap.map(([n,j])=>`<div class="rekap-row"><span class="rekap-name">${n}</span><span class="rekap-val"><strong>${j}</strong> pcs</span></div>`).join('')
+     +`<div class="rekap-row" style="border-top:1.5px solid var(--border2);font-weight:700;margin-top:4px;padding-top:8px"><span>Total</span><span>${total} pcs</span></div>`
+    :'<div class="empty">Tidak ada data.</div>';
 
-  document.getElementById('lap-jamaah').innerHTML=
-    `<div style="font-size:12px;color:var(--tx2);margin-bottom:10px">Full Set: <strong>${fsCount}</strong> jamaah &nbsp;·&nbsp; Satuan: <strong>${satCount}</strong> jamaah</div>`+
-    filtered.map((l,i)=>{
-      const d=new Date(l.tanggal||'');
-      const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
+  const rsFiltered=restockData.filter(r=>{
+    if(currentMode==='bulan')return true;
+    if(currentMode==='minggu'||currentMode==='custom'){
+      const dari=currentMode==='custom'?document.getElementById('lap-dari').value:'';
+      const sampai=currentMode==='custom'?document.getElementById('lap-sampai').value:'';
+      return currentMode==='custom'?(r.tanggal>=dari&&r.tanggal<=sampai):logs.some(l=>l.tanggal===r.tanggal);
+    }
+    return true;
+  });
+  document.getElementById('lap-restock').innerHTML=rsFiltered.length
+    ?rsFiltered.map(r=>`<div class="rekap-row"><span>${r.nama_barang}</span><span><strong>+${r.jumlah}</strong> pcs · ${fmtDate(r.tanggal)} · ${r.petugas}</span></div>`).join('')
+    :'<div style="font-size:13px;color:var(--tx2);padding:8px 0">Tidak ada restock pada periode ini.</div>';
+
+  const jamaahLogs=logs.filter(l=>!isSiapkan(l.tipe)&&!isRestock(l.tipe));
+  document.getElementById('lap-jamaah').innerHTML=jamaahLogs.length
+    ?jamaahLogs.map((l,i)=>{
       const items=Array.isArray(l.barang)?l.barang:[];
-      const isFS=l.tipe==='fullset';
-      return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
-        <div style="font-size:14px;font-weight:600">${i+1}. ${l.nama_jamaah}
-          <span style="font-weight:400;font-size:12px;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>
-          ${isFS?'<span class="badge b-green" style="margin-left:4px">Full Set</span>':'<span class="badge b-info" style="margin-left:4px">Satuan</span>'}
-        </div>
-        <div style="font-size:12px;color:var(--tx2);margin-top:3px">📅 ${tglStr} &nbsp;·&nbsp; 👤 ${l.petugas}</div>
-        <div class="log-pills" style="margin-top:6px">${items.map(it=>`<span class="pill">${it}</span>`).join('')}</div>
+      return`<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:14px;font-weight:600">${i+1}. ${l.nama_jamaah} ${tipeBadge(l.tipe)}</div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:3px">📅 ${l.bulan_keberangkatan||'-'} · 📆 ${fmtDate(l.tanggal)} · 👤 ${l.petugas}</div>
+        ${l.keterangan?`<div style="font-size:12px;color:var(--tx2);font-style:italic">💬 ${l.keterangan}</div>`:''}
+        <div class="log-pills" style="margin-top:5px">${items.map(it=>`<span class="pill">${it}</span>`).join('')}</div>
       </div>`;
-    }).join('');
+    }).join('')
+    :'<div class="empty">Tidak ada pengambilan pada periode ini.</div>';
 }
 
-function cetakPDF() {
-  const bln=document.getElementById('lap-bln').value;
-  if (!bln){showToast('Pilih bulan terlebih dahulu!','error');return;}
-  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
-  if (!filtered.length){showToast('Tidak ada data untuk bulan ini.','error');return;}
-  const rekap=hitungRekap(bln);
-  const totalKeluar=rekap.reduce((s,[,j])=>s+j,0);
-  const fsCount=filtered.filter(l=>l.tipe==='fullset').length;
-  const satCount=filtered.filter(l=>l.tipe!=='fullset').length;
+function cetakPDF(){
+  const {logs,label,periodeLabel}=getFilteredLogs();
+  if(!logs.length){showToast('Tidak ada data untuk periode ini!','error');return;}
+  const rekap=hitungRekap(logs);
+  const total=rekap.reduce((s,[,j])=>s+j,0);
+  const jamaahLogs=logs.filter(l=>!isSiapkan(l.tipe)&&!isRestock(l.tipe));
+  const rsFiltered=restockData.filter(r=>{
+    if(currentMode==='bulan')return true;
+    if(currentMode==='custom'){const dari=document.getElementById('lap-dari').value,sampai=document.getElementById('lap-sampai').value;return r.tanggal>=dari&&r.tanggal<=sampai;}
+    return logs.some(l=>l.tanggal===r.tanggal);
+  });
   const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
 
   const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
-<title>Laporan SO Perlengkapan — ${bln}</title>
+<title>Laporan SO Perlengkapan — ${label}</title>
 <style>
-  body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:0}
-  .page{padding:36px 40px;max-width:740px;margin:0 auto}
-  .header{border-bottom:2.5px solid #111;padding-bottom:14px;margin-bottom:24px}
-  .header h1{font-size:20px;font-weight:700;margin:0 0 6px}
-  .header p{font-size:12px;color:#555;margin:2px 0}
-  h2{font-size:14px;font-weight:700;margin:22px 0 10px;padding-bottom:5px;border-bottom:1.5px solid #ddd}
-  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}
-  th{background:#f0f0f0;text-align:left;padding:8px 10px;font-weight:700;border:1px solid #ccc}
-  td{padding:7px 10px;border:1px solid #ddd;vertical-align:top}
+  body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+  .page{padding:28px 36px;max-width:740px;margin:0 auto}
+  .header{background:#7B1F2E;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
+  .header h1{font-size:18px;font-weight:700;margin:0 0 5px}
+  .header p{font-size:11px;opacity:.85;margin:2px 0}
+  h2{font-size:13px;font-weight:700;margin:18px 0 8px;padding:6px 10px;background:#F9ECED;color:#7B1F2E;border-radius:6px;border-left:4px solid #7B1F2E}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px}
+  th{background:#f5f5f3;text-align:left;padding:7px 9px;font-weight:700;border:1px solid #ddd}
+  td{padding:7px 9px;border:1px solid #ddd;vertical-align:top}
   tr:nth-child(even) td{background:#fafafa}
-  .total-row td{font-weight:700;background:#f0f0f0}
-  .pill{display:inline-block;background:#eee;border-radius:99px;padding:2px 9px;margin:2px 2px 0 0;font-size:11px}
-  .badge-fs{background:#eaf3de;color:#1D9E75;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
-  .badge-sat{background:#e6f1fb;color:#185fa5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
-  .footer{margin-top:36px;font-size:11px;color:#aaa;border-top:1px solid #ddd;padding-top:12px;display:flex;justify-content:space-between}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  .total-row td{font-weight:700;background:#F9ECED;color:#7B1F2E}
+  .pill{display:inline-block;background:#f0eeea;border-radius:99px;padding:1px 8px;margin:1px 2px 0 0;font-size:10px}
+  .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
+  .badge-maroon{background:#F9ECED;color:#7B1F2E}
+  .badge-blue{background:#e6f1fb;color:#185fa5}
+  .badge-warn{background:#faeeda;color:#854f0b}
+  .badge-purple{background:#EEEDFE;color:#534AB7}
+  .footer{margin-top:24px;font-size:10px;color:#aaa;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{padding:20px 28px}}
 </style></head><body><div class="page">
 <div class="header">
-  <h1>Laporan Pengeluaran Perlengkapan Umroh</h1>
-  <p><strong>Bulan Keberangkatan:</strong> ${bln}</p>
-  <p><strong>Tanggal Cetak:</strong> ${tglCetak} &nbsp;·&nbsp; <strong>Dicetak oleh:</strong> ${user.username}</p>
-  <p><strong>Jumlah Jamaah:</strong> ${filtered.length} orang &nbsp;·&nbsp; <strong>Full Set:</strong> ${fsCount} &nbsp;·&nbsp; <strong>Satuan:</strong> ${satCount} &nbsp;·&nbsp; <strong>Total Item Keluar:</strong> ${totalKeluar} pcs</p>
+  <h1>Laporan Perlengkapan Umroh</h1>
+  <p>${periodeLabel}</p>
+  <p>Tanggal cetak: ${tglCetak} &nbsp;·&nbsp; Dicetak oleh: ${user.username}</p>
+  <p>Total jamaah: ${jamaahLogs.length} &nbsp;·&nbsp; Total item keluar: ${total} pcs</p>
 </div>
+
 <h2>A. Rekapitulasi Barang Keluar</h2>
 <table>
   <thead><tr><th width="5%">No</th><th width="65%">Nama Barang</th><th width="30%">Jumlah Keluar</th></tr></thead>
   <tbody>
-    ${rekap.map(([nama,jml],i)=>`<tr><td>${i+1}</td><td>${nama}</td><td><strong>${jml} pcs</strong></td></tr>`).join('')}
-    <tr class="total-row"><td colspan="2" style="text-align:right">Total seluruh item keluar</td><td><strong>${totalKeluar} pcs</strong></td></tr>
+    ${rekap.map(([n,j],i)=>`<tr><td>${i+1}</td><td>${n}</td><td><strong>${j} pcs</strong></td></tr>`).join('')}
+    <tr class="total-row"><td colspan="2" style="text-align:right">Total seluruh item</td><td><strong>${total} pcs</strong></td></tr>
   </tbody>
 </table>
-<h2>B. Riwayat Pengambilan per Jamaah</h2>
+
+<h2>B. Barang Masuk (Restock)</h2>
+${rsFiltered.length?`<table>
+  <thead><tr><th width="15%">Tanggal</th><th width="40%">Nama Barang</th><th width="20%">Jumlah Masuk</th><th width="25%">Petugas</th></tr></thead>
+  <tbody>${rsFiltered.map(r=>`<tr><td>${fmtDate(r.tanggal)}</td><td>${r.nama_barang}</td><td>+${r.jumlah} pcs</td><td>${r.petugas}</td></tr>`).join('')}</tbody>
+</table>`:'<p style="color:#888;font-size:11px;margin-bottom:14px">Tidak ada restock pada periode ini.</p>'}
+
+<h2>C. Riwayat Pengambilan Jamaah</h2>
 <table>
-  <thead><tr><th width="4%">No</th><th width="12%">Tanggal</th><th width="20%">Nama Jamaah</th><th width="5%">JK</th><th width="8%">Tipe</th><th width="33%">Barang Diambil</th><th width="18%">Petugas</th></tr></thead>
+  <thead>
+    <tr><th width="4%">No</th><th width="12%">Tanggal</th><th width="20%">Nama</th><th width="10%">Tipe</th><th width="14%">Bulan Kbkt</th><th width="27%">Barang</th><th width="13%">Petugas</th></tr>
+  </thead>
   <tbody>
-    ${filtered.map((l,i)=>{
+    ${jamaahLogs.map((l,i)=>{
       const d=new Date(l.tanggal||'');
       const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
       const items=Array.isArray(l.barang)?l.barang:[];
-      const isFS=l.tipe==='fullset';
-      return `<tr><td>${i+1}</td><td>${tglStr}</td><td>${l.nama_jamaah}</td><td>${l.jenis_kelamin}</td>
-        <td><span class="${isFS?'badge-fs':'badge-sat'}">${isFS?'Full Set':'Satuan'}</span></td>
-        <td>${items.map(it=>`<span class="pill">${it}</span>`).join('')}</td>
-        <td>${l.petugas}</td></tr>`;
+      const tipe=l.tipe||'satuan';
+      const bdgMap={'satuan':'badge-blue','standby_lk':'badge-blue','standby_pr':'badge-maroon','rombongan_lk':'badge-purple','rombongan_pr':'badge-purple'};
+      const bdgLabel={'satuan':'Satuan','standby_lk':'Standby LK','standby_pr':'Standby PR','rombongan_lk':'Rombongan LK','rombongan_pr':'Rombongan PR'};
+      return`<tr><td>${i+1}</td><td>${tglStr}</td><td>${l.nama_jamaah||''}</td>
+        <td><span class="badge ${bdgMap[tipe]||'badge-blue'}">${bdgLabel[tipe]||tipe}</span></td>
+        <td>${l.bulan_keberangkatan||'-'}</td>
+        <td>${items.map(it=>`<span class="pill">${it}</span>`).join('')}${l.keterangan?`<br><em style="font-size:10px;color:#888">${l.keterangan}</em>`:''}</td>
+        <td>${l.petugas||''}</td></tr>`;
     }).join('')}
   </tbody>
 </table>
-<div class="footer"><span>Sistem SO Perlengkapan Travel Umroh · Assyifa Tour & Travel</span><span>${tglCetak}</span></div>
+<div class="footer"><span>SO Perlengkapan Umroh · Assyifa Tour & Travel</span><span>${tglCetak}</span></div>
 </div></body></html>`;
-
   const w=window.open('','_blank','width=820,height=680');
   if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);}
   else showToast('Izinkan popup di browser untuk mencetak!','error');
 }
 
-async function loadLog() {
+async function loadAll(){
   showLoading(true);
-  try { const res=await apiGet({action:'getLog'}); if(res.ok){logData=res.data;updateLapBln();}else showToast('Gagal memuat.','error'); }
-  catch(e){showToast('Gagal terhubung.','error');}
+  try{
+    const [rl,rr]=await Promise.all([apiGet({action:'getLog'}),apiGet({action:'getRestock'})]);
+    if(rl.ok){logData=rl.data;updateLapBln();}
+    if(rr.ok) restockData=rr.data;
+  }catch(e){showToast('Gagal memuat.','error');}
   showLoading(false);
 }
-loadLog();
+loadAll();
 </script>
 </body>
 </html>
