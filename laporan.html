@@ -8,8 +8,7 @@
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memuat data...</p></div>
-
-<div class="topbar" id="topbar"></div>
+<nav class="navbar" id="navbar"></nav>
 
 <div class="container">
   <div class="card">
@@ -21,11 +20,9 @@
       </select>
     </div>
     <p style="font-size:12px;color:var(--tx2);margin-bottom:14px">
-      Laporan mencakup rekapitulasi barang keluar per item dan riwayat pengambilan per jamaah.
+      Laporan mencakup rekapitulasi barang keluar per item (satuan & full set) dan riwayat pengambilan per jamaah.
     </p>
-    <button class="btn btn-primary btn-block" onclick="cetakPDF()">
-      🖨️ Cetak / Simpan PDF
-    </button>
+    <button class="btn btn-primary btn-block" onclick="cetakPDF()">🖨️ Cetak / Simpan PDF</button>
   </div>
 
   <div id="lap-preview" style="display:none">
@@ -44,99 +41,94 @@
 <script src="config.js"></script>
 <script>
 if (!requireLogin()) throw new Error('not logged in');
-renderTopbar('📄 Laporan', 'Cetak laporan PDF bulanan');
-
+renderNavbar('laporan.html');
+const user = getUser();
 let logData = [];
 
 function updateLapBln() {
-  const blns = [...new Set(logData.map(l => l.bulan_keberangkatan || '').filter(Boolean))];
-  const sel  = document.getElementById('lap-bln');
-  sel.innerHTML = `<option value="">— Pilih bulan —</option>` +
-    blns.map(b => `<option value="${b}">${b}</option>`).join('');
+  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(Boolean))];
+  const sel=document.getElementById('lap-bln');
+  sel.innerHTML=`<option value="">— Pilih bulan —</option>`+blns.map(b=>`<option value="${b}">${b}</option>`).join('');
 }
 
 function hitungRekap(bln) {
-  const filtered = logData.filter(l => l.bulan_keberangkatan === bln);
-  const map = {};
-  filtered.forEach(l => {
-    const items = Array.isArray(l.barang) ? l.barang : [];
-    items.forEach(it => { map[it] = (map[it] || 0) + 1; });
-  });
-  return Object.entries(map).sort((a,b) => b[1]-a[1]);
+  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
+  const map={};
+  filtered.forEach(l=>{const items=Array.isArray(l.barang)?l.barang:[];items.forEach(it=>{map[it]=(map[it]||0)+1;});});
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
 
 function previewLaporan() {
-  const bln = document.getElementById('lap-bln').value;
-  if (!bln) { document.getElementById('lap-preview').style.display = 'none'; return; }
-  const filtered = logData.filter(l => l.bulan_keberangkatan === bln);
-  if (!filtered.length) { document.getElementById('lap-preview').style.display = 'none'; return; }
+  const bln=document.getElementById('lap-bln').value;
+  if (!bln){document.getElementById('lap-preview').style.display='none';return;}
+  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
+  if (!filtered.length){document.getElementById('lap-preview').style.display='none';return;}
+  document.getElementById('lap-preview').style.display='block';
+  const rekap=hitungRekap(bln);
+  const totalKeluar=rekap.reduce((s,[,j])=>s+j,0);
+  const fsCount=filtered.filter(l=>l.tipe==='fullset').length;
+  const satCount=filtered.filter(l=>l.tipe!=='fullset').length;
 
-  document.getElementById('lap-preview').style.display = 'block';
-  const rekap = hitungRekap(bln);
-
-  document.getElementById('lap-rekap').innerHTML = rekap.length
-    ? rekap.map(([nama, jml]) => `
-        <div class="rekap-row">
-          <span class="rekap-name">${nama}</span>
-          <span class="rekap-val"><strong>${jml}</strong> pcs keluar</span>
-        </div>`).join('') +
-      `<div class="rekap-row" style="border-top:1.5px solid var(--border2);margin-top:4px;padding-top:8px">
-        <span class="rekap-name" style="font-weight:700">Total seluruh item</span>
-        <span class="rekap-val"><strong>${rekap.reduce((s,[,j])=>s+j,0)}</strong> pcs</span>
-      </div>`
+  document.getElementById('lap-rekap').innerHTML=rekap.length
+    ? rekap.map(([nama,jml])=>`<div class="rekap-row"><span>${nama}</span><span><strong>${jml}</strong> pcs</span></div>`).join('')+
+      `<div class="rekap-row" style="border-top:1.5px solid var(--border2);margin-top:4px;padding-top:8px;font-weight:700"><span>Total seluruh item</span><span>${totalKeluar} pcs</span></div>`
     : '<div class="empty">Tidak ada data.</div>';
 
-  document.getElementById('lap-jamaah').innerHTML = filtered.map((l,i) => {
-    const d     = new Date(l.tanggal || '');
-    const tglStr = isNaN(d) ? l.tanggal : `${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
-    const items  = Array.isArray(l.barang) ? l.barang : [];
-    return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
-      <div style="font-size:14px;font-weight:600">${i+1}. ${l.nama_jamaah}
-        <span style="font-weight:400;font-size:12px;color:var(--tx2)">(${l.jenis_kelamin === 'LK' ? 'Laki-laki' : 'Perempuan'})</span>
-      </div>
-      <div style="font-size:12px;color:var(--tx2);margin-top:3px">📅 ${tglStr} &nbsp;·&nbsp; 👤 ${l.petugas}</div>
-      <div class="log-pills" style="margin-top:6px">${items.map(it=>`<span class="pill">${it}</span>`).join('')}</div>
-    </div>`;
-  }).join('');
+  document.getElementById('lap-jamaah').innerHTML=
+    `<div style="font-size:12px;color:var(--tx2);margin-bottom:10px">Full Set: <strong>${fsCount}</strong> jamaah &nbsp;·&nbsp; Satuan: <strong>${satCount}</strong> jamaah</div>`+
+    filtered.map((l,i)=>{
+      const d=new Date(l.tanggal||'');
+      const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
+      const items=Array.isArray(l.barang)?l.barang:[];
+      const isFS=l.tipe==='fullset';
+      return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:14px;font-weight:600">${i+1}. ${l.nama_jamaah}
+          <span style="font-weight:400;font-size:12px;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>
+          ${isFS?'<span class="badge b-green" style="margin-left:4px">Full Set</span>':'<span class="badge b-info" style="margin-left:4px">Satuan</span>'}
+        </div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:3px">📅 ${tglStr} &nbsp;·&nbsp; 👤 ${l.petugas}</div>
+        <div class="log-pills" style="margin-top:6px">${items.map(it=>`<span class="pill">${it}</span>`).join('')}</div>
+      </div>`;
+    }).join('');
 }
 
 function cetakPDF() {
-  const bln  = document.getElementById('lap-bln').value;
-  const user = getUser();
-  if (!bln) { showToast('Pilih bulan terlebih dahulu!', 'error'); return; }
-  const filtered = logData.filter(l => l.bulan_keberangkatan === bln);
-  if (!filtered.length) { showToast('Tidak ada data untuk bulan ini.', 'error'); return; }
+  const bln=document.getElementById('lap-bln').value;
+  if (!bln){showToast('Pilih bulan terlebih dahulu!','error');return;}
+  const filtered=logData.filter(l=>l.bulan_keberangkatan===bln);
+  if (!filtered.length){showToast('Tidak ada data untuk bulan ini.','error');return;}
+  const rekap=hitungRekap(bln);
+  const totalKeluar=rekap.reduce((s,[,j])=>s+j,0);
+  const fsCount=filtered.filter(l=>l.tipe==='fullset').length;
+  const satCount=filtered.filter(l=>l.tipe!=='fullset').length;
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
 
-  const rekap      = hitungRekap(bln);
-  const totalKeluar = rekap.reduce((s,[,j])=>s+j,0);
-  const tglCetak   = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-
-  const html = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
 <title>Laporan SO Perlengkapan — ${bln}</title>
 <style>
   body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:0}
-  .page{padding:36px 40px;max-width:720px;margin:0 auto}
+  .page{padding:36px 40px;max-width:740px;margin:0 auto}
   .header{border-bottom:2.5px solid #111;padding-bottom:14px;margin-bottom:24px}
   .header h1{font-size:20px;font-weight:700;margin:0 0 6px}
   .header p{font-size:12px;color:#555;margin:2px 0}
-  h2{font-size:14px;font-weight:700;margin:22px 0 10px;padding-bottom:5px;border-bottom:1.5px solid #ddd;color:#222}
+  h2{font-size:14px;font-weight:700;margin:22px 0 10px;padding-bottom:5px;border-bottom:1.5px solid #ddd}
   table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}
   th{background:#f0f0f0;text-align:left;padding:8px 10px;font-weight:700;border:1px solid #ccc}
   td{padding:7px 10px;border:1px solid #ddd;vertical-align:top}
   tr:nth-child(even) td{background:#fafafa}
   .total-row td{font-weight:700;background:#f0f0f0}
   .pill{display:inline-block;background:#eee;border-radius:99px;padding:2px 9px;margin:2px 2px 0 0;font-size:11px}
+  .badge-fs{background:#eaf3de;color:#1D9E75;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+  .badge-sat{background:#e6f1fb;color:#185fa5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
   .footer{margin-top:36px;font-size:11px;color:#aaa;border-top:1px solid #ddd;padding-top:12px;display:flex;justify-content:space-between}
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body><div class="page">
-
 <div class="header">
   <h1>Laporan Pengeluaran Perlengkapan Umroh</h1>
   <p><strong>Bulan Keberangkatan:</strong> ${bln}</p>
   <p><strong>Tanggal Cetak:</strong> ${tglCetak} &nbsp;·&nbsp; <strong>Dicetak oleh:</strong> ${user.username}</p>
-  <p><strong>Jumlah Jamaah:</strong> ${filtered.length} orang &nbsp;·&nbsp; <strong>Total Item Keluar:</strong> ${totalKeluar} pcs</p>
+  <p><strong>Jumlah Jamaah:</strong> ${filtered.length} orang &nbsp;·&nbsp; <strong>Full Set:</strong> ${fsCount} &nbsp;·&nbsp; <strong>Satuan:</strong> ${satCount} &nbsp;·&nbsp; <strong>Total Item Keluar:</strong> ${totalKeluar} pcs</p>
 </div>
-
 <h2>A. Rekapitulasi Barang Keluar</h2>
 <table>
   <thead><tr><th width="5%">No</th><th width="65%">Nama Barang</th><th width="30%">Jumlah Keluar</th></tr></thead>
@@ -145,57 +137,36 @@ function cetakPDF() {
     <tr class="total-row"><td colspan="2" style="text-align:right">Total seluruh item keluar</td><td><strong>${totalKeluar} pcs</strong></td></tr>
   </tbody>
 </table>
-
 <h2>B. Riwayat Pengambilan per Jamaah</h2>
 <table>
-  <thead>
-    <tr>
-      <th width="4%">No</th>
-      <th width="14%">Tanggal</th>
-      <th width="22%">Nama Jamaah</th>
-      <th width="6%">JK</th>
-      <th width="36%">Barang Diambil</th>
-      <th width="18%">Petugas Input</th>
-    </tr>
-  </thead>
+  <thead><tr><th width="4%">No</th><th width="12%">Tanggal</th><th width="20%">Nama Jamaah</th><th width="5%">JK</th><th width="8%">Tipe</th><th width="33%">Barang Diambil</th><th width="18%">Petugas</th></tr></thead>
   <tbody>
     ${filtered.map((l,i)=>{
-      const d = new Date(l.tanggal||'');
-      const tglStr = isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
-      const items  = Array.isArray(l.barang)?l.barang:[];
-      return `<tr>
-        <td>${i+1}</td>
-        <td>${tglStr}</td>
-        <td>${l.nama_jamaah}</td>
-        <td>${l.jenis_kelamin}</td>
+      const d=new Date(l.tanggal||'');
+      const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
+      const items=Array.isArray(l.barang)?l.barang:[];
+      const isFS=l.tipe==='fullset';
+      return `<tr><td>${i+1}</td><td>${tglStr}</td><td>${l.nama_jamaah}</td><td>${l.jenis_kelamin}</td>
+        <td><span class="${isFS?'badge-fs':'badge-sat'}">${isFS?'Full Set':'Satuan'}</span></td>
         <td>${items.map(it=>`<span class="pill">${it}</span>`).join('')}</td>
-        <td>${l.petugas}</td>
-      </tr>`;
+        <td>${l.petugas}</td></tr>`;
     }).join('')}
   </tbody>
 </table>
-
-<div class="footer">
-  <span>Sistem SO Perlengkapan Travel Umroh</span>
-  <span>${tglCetak}</span>
-</div>
+<div class="footer"><span>Sistem SO Perlengkapan Travel Umroh · Assyifa Tour & Travel</span><span>${tglCetak}</span></div>
 </div></body></html>`;
 
-  const w = window.open('', '_blank', 'width=820,height=680');
-  if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 700); }
-  else showToast('Izinkan popup di browser untuk mencetak!', 'error');
+  const w=window.open('','_blank','width=820,height=680');
+  if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);}
+  else showToast('Izinkan popup di browser untuk mencetak!','error');
 }
 
 async function loadLog() {
   showLoading(true);
-  try {
-    const res = await apiGet({ action: 'getLog' });
-    if (res.ok) { logData = res.data; updateLapBln(); }
-    else showToast('Gagal memuat data.', 'error');
-  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  try { const res=await apiGet({action:'getLog'}); if(res.ok){logData=res.data;updateLapBln();}else showToast('Gagal memuat.','error'); }
+  catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
-
 loadLog();
 </script>
 </body>
