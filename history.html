@@ -8,8 +8,7 @@
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memuat riwayat...</p></div>
-
-<div class="topbar" id="topbar"></div>
+<nav class="navbar" id="navbar"></nav>
 
 <div class="container">
   <div class="toolbar">
@@ -17,104 +16,89 @@
     <select id="log-bln" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:120px">
       <option value="">Semua Bulan</option>
     </select>
-    <select id="log-pet" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
+    <select id="log-pet" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
       <option value="">Semua Petugas</option>
       <option>Admin</option>
       <option>Azhar Dzaky Muhamad HM</option>
       <option>Dedi</option>
     </select>
+    <select id="log-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
+      <option value="">Semua Tipe</option>
+      <option value="fullset">Full Set</option>
+      <option value="satuan">Satuan</option>
+    </select>
     <button class="btn btn-sm" onclick="exportCSV()" title="Export CSV">⬇️ CSV</button>
   </div>
-
-  <div id="log-summary" style="margin-bottom:12px"></div>
-
-  <div class="card" id="log-list">
-    <div class="empty"><div class="empty-icon">📋</div>Memuat riwayat...</div>
-  </div>
+  <div id="log-summary" style="margin-bottom:10px"></div>
+  <div class="card" id="log-list"><div class="empty"><div class="empty-icon">📋</div>Memuat riwayat...</div></div>
 </div>
 
 <script src="config.js"></script>
 <script>
 if (!requireLogin()) throw new Error('not logged in');
-renderTopbar('📋 History Log', 'Riwayat pengambilan barang');
-
+renderNavbar('history.html');
 let logData = [];
 
 function updateFilter() {
-  const blns = [...new Set(logData.map(l => l.bulan_keberangkatan || '').filter(Boolean))];
-  const sel  = document.getElementById('log-bln');
-  const cur  = sel.value;
-  sel.innerHTML = `<option value="">Semua Bulan</option>` +
-    blns.map(b => `<option ${b===cur?'selected':''} value="${b}">${b}</option>`).join('');
+  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(Boolean))];
+  const sel=document.getElementById('log-bln'), cur=sel.value;
+  sel.innerHTML=`<option value="">Semua Bulan</option>`+blns.map(b=>`<option ${b===cur?'selected':''} value="${b}">${b}</option>`).join('');
 }
 
-function renderLog(q = '', bln = '', pet = '') {
-  const filtered = logData.filter(l => {
-    const nama = (l.nama_jamaah || '').toLowerCase();
-    const blnL = l.bulan_keberangkatan || '';
-    const petL = l.petugas || '';
-    return nama.includes(q.toLowerCase()) && (!bln || blnL === bln) && (!pet || petL === pet);
+function renderLog(q='',bln='',pet='',tipe='') {
+  const filtered=logData.filter(l=>{
+    const nama=(l.nama_jamaah||'').toLowerCase();
+    return nama.includes(q.toLowerCase())&&(!bln||l.bulan_keberangkatan===bln)&&(!pet||l.petugas===pet)&&(!tipe||l.tipe===tipe);
   });
-
-  // Summary
-  document.getElementById('log-summary').innerHTML = filtered.length
-    ? `<span style="font-size:13px;color:var(--tx2)">Menampilkan <strong>${filtered.length}</strong> transaksi</span>`
-    : '';
-
-  if (!filtered.length) {
-    document.getElementById('log-list').innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat pengambilan.</div>';
-    return;
-  }
-  document.getElementById('log-list').innerHTML = filtered.map(l => {
-    const tgl   = l.tanggal || '';
-    const d     = new Date(tgl);
-    const day   = isNaN(d) ? '—' : d.getDate();
-    const mon   = isNaN(d) ? '—' : BLN[d.getMonth()];
-    const items = Array.isArray(l.barang) ? l.barang : [];
+  document.getElementById('log-summary').innerHTML=filtered.length
+    ?`<span style="font-size:13px;color:var(--tx2)">Menampilkan <strong>${filtered.length}</strong> transaksi</span>`:'' ;
+  if (!filtered.length) { document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>'; return; }
+  document.getElementById('log-list').innerHTML=filtered.map(l=>{
+    const d=new Date(l.tanggal||'');
+    const day=isNaN(d)?'—':d.getDate(), mon=isNaN(d)?'—':BLN[d.getMonth()];
+    const items=Array.isArray(l.barang)?l.barang:[];
+    const isFS=l.tipe==='fullset';
     return `<div class="log-row">
       <div class="log-date"><div class="log-d">${day}</div><div class="log-m">${mon}</div></div>
       <div class="log-info">
-        <div class="log-n">${l.nama_jamaah} <span style="font-size:11px;font-weight:400;color:var(--tx2)">(${l.jenis_kelamin === 'LK' ? 'Laki-laki' : 'Perempuan'})</span></div>
+        <div class="log-n">${l.nama_jamaah}
+          <span style="font-size:11px;font-weight:400;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>
+          ${isFS?'<span class="badge b-green" style="margin-left:4px">Full Set</span>':'<span class="badge b-info" style="margin-left:4px">Satuan</span>'}
+        </div>
         <div class="log-s">📅 ${l.bulan_keberangkatan}</div>
         <div class="log-s">👤 ${l.petugas}</div>
-        <div class="log-pills">
-          ${items.map(i => `<span class="pill">${i}</span>`).join('')}
-          <span class="badge b-info">${items.length} item</span>
-        </div>
+        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-info">${items.length} item</span></div>
       </div>
     </div>`;
   }).join('');
 }
 
 function filterLog(q) {
-  const bln = document.getElementById('log-bln').value;
-  const pet = document.getElementById('log-pet').value;
-  renderLog(q, bln, pet);
+  const bln=document.getElementById('log-bln').value;
+  const pet=document.getElementById('log-pet').value;
+  const tipe=document.getElementById('log-tipe').value;
+  renderLog(q,bln,pet,tipe);
 }
 
 function exportCSV() {
-  let csv = 'Tanggal,Nama Jamaah,JK,Bulan Keberangkatan,Barang,Petugas\n';
-  logData.forEach(l => {
-    const items = Array.isArray(l.barang) ? l.barang : [];
-    csv += `${l.tanggal},"${l.nama_jamaah}","${l.jenis_kelamin}","${l.bulan_keberangkatan}","${items.join(', ')}","${l.petugas}"\n`;
+  let csv='Tanggal,Nama Jamaah,JK,Bulan Keberangkatan,Tipe,Barang,Petugas\n';
+  logData.forEach(l=>{
+    const items=Array.isArray(l.barang)?l.barang:[];
+    csv+=`${l.tanggal},"${l.nama_jamaah}","${l.jenis_kelamin}","${l.bulan_keberangkatan}","${l.tipe||'satuan'}","${items.join(', ')}","${l.petugas}"\n`;
   });
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = `Log_Pengambilan_SO_Umroh_${new Date().toISOString().split('T')[0]}.csv`;
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`Log_Pengambilan_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
-  showToast('CSV berhasil didownload! ⬇️', 'success');
+  showToast('CSV berhasil didownload! ⬇️','success');
 }
 
 async function loadLog() {
   showLoading(true);
-  try {
-    const res = await apiGet({ action: 'getLog' });
-    if (res.ok) { logData = res.data; updateFilter(); renderLog(); }
-    else showToast('Gagal memuat riwayat.', 'error');
-  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  try { const res=await apiGet({action:'getLog'}); if(res.ok){logData=res.data;updateFilter();renderLog();}else showToast('Gagal memuat.','error'); }
+  catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
-
 loadLog();
 </script>
 </body>
