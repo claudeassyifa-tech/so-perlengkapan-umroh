@@ -53,10 +53,24 @@ function normBulanJS(val) {
 
 // Normalisasi semua log dari API
 function normalizeLogs(data) {
-  return data.map(l => ({
-    ...l,
-    bulan_keberangkatan: normBulanJS(l.bulan_keberangkatan),
-  }));
+  return data.map(l => {
+    // Normalisasi tanggal ke YYYY-MM-DD
+    let tgl = l.tanggal || '';
+    if (tgl) {
+      const d = new Date(tgl);
+      if (!isNaN(d)) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        tgl = `${y}-${m}-${dd}`;
+      }
+    }
+    return {
+      ...l,
+      tanggal: tgl,
+      bulan_keberangkatan: normBulanJS(l.bulan_keberangkatan),
+    };
+  });
 }
 
 function showToast(msg, type='info') {
