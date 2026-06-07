@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>History Log — SO Perlengkapan Umroh</title>
+<title>History Log — SO Perlengkapan</title>
 <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
@@ -12,8 +12,8 @@
 
 <div class="container">
   <div class="toolbar">
-    <input type="text" placeholder="🔍 Cari nama jamaah..." oninput="filterLog(this.value)"/>
-    <select id="log-bln" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:120px">
+    <input type="text" placeholder="🔍 Cari nama jamaah / rombongan..." oninput="filterLog(this.value)"/>
+    <select id="log-bln" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
       <option value="">Semua Bulan</option>
     </select>
     <select id="log-pet" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
@@ -24,94 +24,132 @@
     </select>
     <select id="log-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
       <option value="">Semua Tipe</option>
+      <option value="satuan">Satuan</option>
       <option value="standby_lk">Standby LK</option>
       <option value="standby_pr">Standby PR</option>
       <option value="standby_siapkan_lk">Siapkan LK</option>
       <option value="standby_siapkan_pr">Siapkan PR</option>
-      <option value="satuan">Satuan</option>
+      <option value="rombongan_lk">Rombongan LK</option>
+      <option value="rombongan_pr">Rombongan PR</option>
     </select>
-    <button class="btn btn-sm" onclick="exportCSV()" title="Export CSV">⬇️ CSV</button>
   </div>
-  <div id="log-summary" style="margin-bottom:10px"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div id="log-summary" style="font-size:13px;color:var(--tx2)"></div>
+    <button class="btn btn-outline btn-sm" onclick="cetakPDFHistory()">
+      <i class="ti ti-printer" aria-hidden="true"></i> Cetak PDF
+    </button>
+  </div>
   <div class="card" id="log-list"><div class="empty"><div class="empty-icon">📋</div>Memuat riwayat...</div></div>
 </div>
 
 <script src="config.js"></script>
 <script>
-if (!requireLogin()) throw new Error('not logged in');
+if(!requireLogin()) throw new Error('not logged in');
 renderNavbar('history.html');
-let logData = [];
+const user=getUser();
+let logData=[], filteredData=[];
 
-function updateFilter() {
-  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(Boolean))];
-  const sel=document.getElementById('log-bln'), cur=sel.value;
+function updateFilter(){
+  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(b=>b&&b!=='-'))];
+  const sel=document.getElementById('log-bln'),cur=sel.value;
   sel.innerHTML=`<option value="">Semua Bulan</option>`+blns.map(b=>`<option ${b===cur?'selected':''} value="${b}">${b}</option>`).join('');
 }
 
-function tipeBadge(tipe) {
-  if (tipe === 'standby_lk') return '<span class="badge b-info" style="margin-left:4px">Standby LK</span>';
-  if (tipe === 'standby_pr') return '<span class="badge" style="margin-left:4px;background:#fbeaf0;color:#993556">Standby PR</span>';
-  if (tipe === 'standby_siapkan_lk') return '<span class="badge b-warn" style="margin-left:4px">Siapkan LK</span>';
-  if (tipe === 'standby_siapkan_pr') return '<span class="badge b-warn" style="margin-left:4px">Siapkan PR</span>';
-  return '<span class="badge b-info" style="margin-left:4px">Satuan</span>';
-}
-
-function isSiapkan(tipe) {
-  return tipe && tipe.startsWith('standby_siapkan');
-}
-
-function renderLog(q='',bln='',pet='',tipe='') {
-  const filtered=logData.filter(l=>{
+function renderLog(q='',bln='',pet='',tipe=''){
+  filteredData=logData.filter(l=>{
     const nama=(l.nama_jamaah||'').toLowerCase();
-    return nama.includes(q.toLowerCase())&&(!bln||l.bulan_keberangkatan===bln)&&(!pet||l.petugas===pet)&&(!tipe||l.tipe===tipe);
+    const blnL=l.bulan_keberangkatan||'';
+    return nama.includes(q.toLowerCase())&&(!bln||blnL===bln)&&(!pet||l.petugas===pet)&&(!tipe||l.tipe===tipe);
   });
-  document.getElementById('log-summary').innerHTML=filtered.length
-    ?`<span style="font-size:13px;color:var(--tx2)">Menampilkan <strong>${filtered.length}</strong> transaksi</span>`:'' ;
-  if (!filtered.length) { document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>'; return; }
-  document.getElementById('log-list').innerHTML=filtered.map(l=>{
+  document.getElementById('log-summary').textContent=filteredData.length?`Menampilkan ${filteredData.length} transaksi`:'';
+  if(!filteredData.length){document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>';return;}
+  document.getElementById('log-list').innerHTML=filteredData.map(l=>{
     const d=new Date(l.tanggal||'');
-    const day=isNaN(d)?'—':d.getDate(), mon=isNaN(d)?'—':BLN[d.getMonth()];
+    const day=isNaN(d)?'—':d.getDate(),mon=isNaN(d)?'—':BLN[d.getMonth()];
     const items=Array.isArray(l.barang)?l.barang:[];
     const siapkan=isSiapkan(l.tipe);
-    const namaDisplay = siapkan
-      ? `<span style="font-weight:600;color:var(--tx2)">Persiapan Koper Standby</span>`
-      : `${l.nama_jamaah} <span style="font-size:11px;font-weight:400;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>`;
-    const blnDisplay = siapkan ? `${items.length} item disiapkan ke depan` : `📅 ${l.bulan_keberangkatan}`;
-    return `<div class="log-row">
+    const isRmb=l.tipe&&l.tipe.startsWith('rombongan');
+    const namaDisplay=siapkan?`<span style="font-weight:600;color:var(--tx2)">Persiapan Koper Standby</span>`:l.nama_jamaah;
+    const blnDisplay=siapkan?`${items.length} item disiapkan ke depan`:l.bulan_keberangkatan;
+    const ketDisplay=l.keterangan&&l.keterangan!==''?`<div class="log-s" style="font-style:italic">💬 ${l.keterangan}</div>`:'';
+    return`<div class="log-row">
       <div class="log-date"><div class="log-d">${day}</div><div class="log-m">${mon}</div></div>
       <div class="log-info">
         <div class="log-n">${namaDisplay}${tipeBadge(l.tipe)}</div>
-        <div class="log-s">${siapkan?'📦':'📅'} ${blnDisplay}</div>
-        <div class="log-s">👤 ${l.petugas}</div>
-        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-info">${items.length} item</span></div>
+        ${blnDisplay&&blnDisplay!=='-'?`<div class="log-s"><i class="ti ti-calendar" aria-hidden="true" style="font-size:11px"></i> ${blnDisplay}</div>`:''}
+        <div class="log-s"><i class="ti ti-user-check" aria-hidden="true" style="font-size:11px"></i> ${l.petugas}</div>
+        ${ketDisplay}
+        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-maroon">${items.length} item</span></div>
       </div>
     </div>`;
   }).join('');
 }
 
-function filterLog(q) {
+function filterLog(q){
   const bln=document.getElementById('log-bln').value;
   const pet=document.getElementById('log-pet').value;
   const tipe=document.getElementById('log-tipe').value;
   renderLog(q,bln,pet,tipe);
 }
 
-function exportCSV() {
-  let csv='Tanggal,Nama Jamaah,JK,Bulan Keberangkatan,Tipe,Barang,Petugas\n';
-  logData.forEach(l=>{
-    const items=Array.isArray(l.barang)?l.barang:[];
-    csv+=`${l.tanggal},"${l.nama_jamaah}","${l.jenis_kelamin}","${l.bulan_keberangkatan}","${l.tipe||'satuan'}","${items.join(', ')}","${l.petugas}"\n`;
-  });
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download=`Log_Pengambilan_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  showToast('CSV berhasil didownload! ⬇️','success');
+function cetakPDFHistory(){
+  if(!filteredData.length){showToast('Tidak ada data untuk dicetak.','error');return;}
+  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
+<title>History Log SO Perlengkapan</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+  .page{padding:30px 36px;max-width:740px;margin:0 auto}
+  .header{background:#7B1F2E;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
+  .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
+  .header p{font-size:11px;opacity:.85;margin:2px 0}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+  th{background:#f0f0f0;text-align:left;padding:7px 9px;font-weight:700;border:1px solid #ddd}
+  td{padding:7px 9px;border:1px solid #ddd;vertical-align:top}
+  tr:nth-child(even) td{background:#fafafa}
+  .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
+  .badge-maroon{background:#F9ECED;color:#7B1F2E}
+  .badge-blue{background:#e6f1fb;color:#185fa5}
+  .badge-warn{background:#faeeda;color:#854f0b}
+  .badge-green{background:#eaf3de;color:#3b6d11}
+  .badge-purple{background:#EEEDFE;color:#534AB7}
+  .footer{margin-top:24px;font-size:10px;color:#aaa;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><div class="page">
+<div class="header">
+  <h1>History Log Perlengkapan Umroh</h1>
+  <p>Dicetak: ${tglCetak} · Oleh: ${user.username} · Total: ${filteredData.length} transaksi</p>
+</div>
+<table>
+  <thead><tr><th width="4%">No</th><th width="12%">Tanggal</th><th width="18%">Nama</th><th width="10%">Tipe</th><th width="14%">Bulan</th><th width="28%">Barang</th><th width="14%">Petugas</th></tr></thead>
+  <tbody>
+    ${filteredData.map((l,i)=>{
+      const d=new Date(l.tgl||l.tanggal||'');
+      const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
+      const items=Array.isArray(l.barang)?l.barang:[];
+      const tipe=l.tipe||'satuan';
+      const bdgMap={'satuan':'badge-blue','standby_lk':'badge-blue','standby_pr':'badge-maroon','standby_siapkan_lk':'badge-warn','standby_siapkan_pr':'badge-warn','rombongan_lk':'badge-purple','rombongan_pr':'badge-purple','restock':'badge-green'};
+      const bdgLabel={'satuan':'Satuan','standby_lk':'Standby LK','standby_pr':'Standby PR','standby_siapkan_lk':'Siapkan LK','standby_siapkan_pr':'Siapkan PR','rombongan_lk':'Rombongan LK','rombongan_pr':'Rombongan PR','restock':'Restock'};
+      return`<tr>
+        <td>${i+1}</td><td>${tglStr}</td><td>${l.nama_jamaah||''}</td>
+        <td><span class="badge ${bdgMap[tipe]||'badge-blue'}">${bdgLabel[tipe]||tipe}</span></td>
+        <td>${l.bulan_keberangkatan||'-'}</td>
+        <td>${items.join(', ')}${l.keterangan?`<br><em>${l.keterangan}</em>`:''}</td>
+        <td>${l.petugas||''}</td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+</table>
+<div class="footer"><span>SO Perlengkapan Umroh · Assyifa Tour & Travel</span><span>${tglCetak}</span></div>
+</div></body></html>`;
+  const w=window.open('','_blank','width=820,height=680');
+  if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);}
+  else showToast('Izinkan popup di browser untuk mencetak!','error');
 }
 
-async function loadLog() {
+async function loadLog(){
   showLoading(true);
-  try { const res=await apiGet({action:'getLog'}); if(res.ok){logData=res.data;updateFilter();renderLog();}else showToast('Gagal memuat.','error'); }
+  try{const res=await apiGet({action:'getLog'});if(res.ok){logData=res.data;updateFilter();renderLog();}else showToast('Gagal memuat.','error');}
   catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
