@@ -3,68 +3,90 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dashboard — SO Perlengkapan Umroh</title>
+<title>Dashboard — SO Perlengkapan</title>
 <link rel="stylesheet" href="style.css"/>
-<style>
-  .alert-restock { background:var(--warn); border:0.5px solid var(--warn-tx); border-radius:var(--r); padding:12px 14px; margin-bottom:14px; font-size:13px; color:var(--warn-tx); display:none; }
-  .alert-restock strong { display:block; margin-bottom:4px; font-size:14px; }
-  .welcome { margin-bottom:16px; }
-  .welcome h2 { font-size:20px; font-weight:700; }
-  .welcome p { font-size:13px; color:var(--tx2); margin-top:4px; }
-</style>
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memuat...</p></div>
 <nav class="navbar" id="navbar"></nav>
 
 <div class="container">
-  <div class="welcome">
-    <h2>Selamat datang! 👋</h2>
-    <p id="welcome-sub">Memuat ringkasan stok...</p>
+  <div style="margin-bottom:14px">
+    <div style="font-size:18px;font-weight:700;color:var(--tx)" id="welcome-title">Selamat datang! 👋</div>
+    <div style="font-size:12px;color:var(--tx2);margin-top:3px" id="welcome-sub">Memuat data...</div>
   </div>
+
   <div class="metrics" id="metrics-bar"></div>
+
   <div class="alert-restock" id="alert-restock">
-    <strong>⚠️ Stok Perlu Restock</strong>
-    <span id="alert-restock-list"></span>
+    <i class="ti ti-alert-triangle" aria-hidden="true" style="font-size:17px;flex-shrink:0"></i>
+    <div><strong>Stok Perlu Restock:</strong> <span id="alert-list"></span></div>
   </div>
+
+  <div class="section-label">Koper Standby — Siap di Depan</div>
+  <div class="standby-wrap">
+    <div class="standby-card lk">
+      <div class="sc-gender lk"><i class="ti ti-man" aria-hidden="true"></i> Laki-laki</div>
+      <div class="sc-title lk">Koper Standby LK</div>
+      <div class="sc-stok lk" id="dash-lk">—</div>
+      <div class="sc-sub">unit siap di depan</div>
+    </div>
+    <div class="standby-card pr">
+      <div class="sc-gender pr"><i class="ti ti-woman" aria-hidden="true"></i> Perempuan</div>
+      <div class="sc-title pr">Koper Standby PR</div>
+      <div class="sc-stok pr" id="dash-pr">—</div>
+      <div class="sc-sub">unit siap di depan</div>
+    </div>
+  </div>
+
   <div class="section-label">Menu Utama</div>
   <div class="nav-grid">
-    <a href="stok.html" class="nav-card"><span class="nav-card-icon">📦</span><div class="nav-card-label">Stok Opname</div><div class="nav-card-sub">Lihat & update stok</div></a>
-    <a href="ambil.html" class="nav-card"><span class="nav-card-icon">🛍️</span><div class="nav-card-label">Pengambilan</div><div class="nav-card-sub">Catat barang keluar</div></a>
-    <a href="history.html" class="nav-card"><span class="nav-card-icon">📋</span><div class="nav-card-label">History Log</div><div class="nav-card-sub">Riwayat pengambilan</div></a>
-    <a href="laporan.html" class="nav-card"><span class="nav-card-icon">📄</span><div class="nav-card-label">Laporan</div><div class="nav-card-sub">Cetak PDF bulanan</div></a>
+    <a href="stok.html" class="nav-card"><span class="nc-icon">📦</span><div class="nc-label">Stok Opname</div><div class="nc-sub">Lihat & update stok</div></a>
+    <a href="ambil.html" class="nav-card"><span class="nc-icon">🛍️</span><div class="nc-label">Pengambilan</div><div class="nc-sub">Catat barang keluar</div></a>
+    <a href="restock.html" class="nav-card"><span class="nc-icon">📥</span><div class="nc-label">Restock</div><div class="nc-sub">Catat barang masuk</div></a>
+    <a href="history.html" class="nav-card"><span class="nc-icon">📋</span><div class="nc-label">History Log</div><div class="nc-sub">Riwayat transaksi</div></a>
+    <a href="laporan.html" class="nav-card" style="grid-column:span 2"><span class="nc-icon">📄</span><div class="nc-label">Laporan</div><div class="nc-sub">Cetak PDF — Harian / Mingguan / Bulanan</div></a>
   </div>
 </div>
 
 <script src="config.js"></script>
 <script>
-if (!requireLogin()) throw new Error('not logged in');
+if(!requireLogin()) throw new Error('not logged in');
 renderNavbar('dashboard.html');
-const user = getUser();
-document.getElementById('welcome-sub').textContent = `Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
+const user=getUser();
+document.getElementById('welcome-title').textContent='Selamat datang! 👋';
+document.getElementById('welcome-sub').textContent=`Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
 
-async function loadDashboard() {
+async function loadDashboard(){
   showLoading(true);
   try {
-    const res = await apiGet({ action:'getStok' });
-    if (!res.ok) { showToast('Gagal memuat data','error'); showLoading(false); return; }
-    const data = res.data;
-    const aman  = data.filter(b=>b.stok>b.limit).length;
-    const rst   = data.filter(b=>b.stok>0&&b.stok<=b.limit).length;
-    const habis = data.filter(b=>b.stok==0).length;
-    document.getElementById('metrics-bar').innerHTML = [
-      {lbl:'Total Item', val:data.length, sub:'jenis barang'},
-      {lbl:'Stok Aman',  val:aman,  sub:'item'},
-      {lbl:'Restock!',   val:rst,   sub:'item'},
-      {lbl:'Habis',      val:habis, sub:'item'},
-    ].map(m=>`<div class="metric"><div class="lbl">${m.lbl}</div><div class="val">${m.val}</div><div class="sub">${m.sub}</div></div>`).join('');
-    const restockItems = data.filter(b=>b.stok<=b.limit);
-    if (restockItems.length) {
-      const el = document.getElementById('alert-restock');
-      el.style.display = 'block';
-      document.getElementById('alert-restock-list').textContent = restockItems.map(b=>`${b.nama} (sisa ${b.stok})`).join(', ');
+    const [rs,rsd]=await Promise.all([apiGet({action:'getStok'}),apiGet({action:'getStandby'})]);
+    if(rs.ok){
+      const d=rs.data;
+      const aman=d.filter(b=>b.stok>b.limit).length;
+      const rst=d.filter(b=>b.stok>0&&b.stok<=b.limit).length;
+      const habis=d.filter(b=>b.stok==0).length;
+      document.getElementById('metrics-bar').innerHTML=[
+        {lbl:'Total Item',val:d.length,sub:'jenis barang',color:'var(--maroon)'},
+        {lbl:'Stok Aman',val:aman,sub:'item',color:'#3b6d11'},
+        {lbl:'Perlu Restock',val:rst,sub:'item',color:'#854f0b',top:'#EF9F27'},
+        {lbl:'Habis',val:habis,sub:'item',color:'#888',top:'#ccc'},
+      ].map(m=>`<div class="metric" style="border-top-color:${m.top||'var(--maroon)'}">
+        <div class="lbl">${m.lbl}</div>
+        <div class="val" style="color:${m.color}">${m.val}</div>
+        <div class="sub">${m.sub}</div>
+      </div>`).join('');
+      const ri=d.filter(b=>b.stok<=b.limit);
+      if(ri.length){
+        document.getElementById('alert-restock').classList.add('show');
+        document.getElementById('alert-list').textContent=ri.map(b=>`${b.nama} (sisa ${b.stok})`).join(', ');
+      }
     }
-  } catch(e) { showToast('Gagal terhubung','error'); }
+    if(rsd.ok){
+      document.getElementById('dash-lk').textContent=rsd.lk;
+      document.getElementById('dash-pr').textContent=rsd.pr;
+    }
+  } catch(e){showToast('Gagal memuat data','error');}
   showLoading(false);
 }
 loadDashboard();
