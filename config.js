@@ -38,6 +38,27 @@ function fmtDate(tgl) {
 }
 function isoToday() { return new Date().toISOString().split('T')[0]; }
 
+// Normalisasi bulan — handle semua format termasuk Date string
+function normBulanJS(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  // Sudah format benar: "Juni 2026"
+  const sudahBenar = BLN_FULL.some(b => s.startsWith(b));
+  if (sudahBenar) return s;
+  // Coba parse sebagai Date (handle "Mon Jun 01 2026..." dan ISO)
+  const d = new Date(s);
+  if (!isNaN(d)) return BLN_FULL[d.getMonth()] + ' ' + d.getFullYear();
+  return s;
+}
+
+// Normalisasi semua log dari API
+function normalizeLogs(data) {
+  return data.map(l => ({
+    ...l,
+    bulan_keberangkatan: normBulanJS(l.bulan_keberangkatan),
+  }));
+}
+
 function showToast(msg, type='info') {
   let t = document.getElementById('toast');
   if (!t) { t = document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
