@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pengambilan Barang — SO Perlengkapan Umroh</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Menyimpan...</p></div>
+
+<div class="topbar" id="topbar"></div>
+
+<div class="container">
+  <div class="card">
+    <div class="card-title">👤 Data Jamaah</div>
+    <div class="fr">
+      <label>Nama Jamaah</label>
+      <input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fr" style="margin-bottom:0">
+        <label>Jenis Kelamin</label>
+        <select id="a-jk" onchange="renderChecklist()">
+          <option value="LK">Laki-laki</option>
+          <option value="PR">Perempuan</option>
+        </select>
+      </div>
+      <div class="fr" style="margin-bottom:0">
+        <label>Bulan Keberangkatan</label>
+        <input type="text" id="a-bln" placeholder="cth: Juni 2026"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✅ Checklist Barang Keluar</div>
+    <div id="cl-list"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+      <span id="cl-count" style="font-size:13px;color:var(--tx2)">0 item dipilih</span>
+      <button class="btn btn-sm" onclick="clearChecklist()">🔄 Reset</button>
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="simpanPengambilan()">
+      💾 Simpan Pengambilan
+    </button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+if (!requireLogin()) throw new Error('not logged in');
+renderTopbar('🛍️ Pengambilan Barang', 'Catat barang keluar jamaah');
+
+const clItems = [
+  { key:'Koper',      label:'Koper',              sub:'1 buah' },
+  { key:'TasGendong', label:'Tas Gendong',         sub:'1 buah' },
+  { key:'TasSlempang',label:'Tas Slempang',        sub:'1 buah' },
+  { key:'TasSendal',  label:'Tas Sendal',          sub:'1 buah' },
+  { key:'IhromMukena',label:'Kain Ihrom / Mukena', sub:'Sesuai jenis kelamin', gender:true, lk:'Kain Ihrom', pr:'Mukena' },
+  { key:'Batik',      label:'Batik LK / Batik PR', sub:'Sesuai jenis kelamin', gender:true, lk:'Batik LK',   pr:'Batik PR' },
+  { key:'Tumbler',    label:'Tumbler',             sub:'1 buah' },
+  { key:'BotolSpray', label:'Botol Spray',         sub:'1 buah' },
+  { key:'BukuPanduan',label:'Buku Panduan',        sub:'1 buah' },
+  { key:'Topi',       label:'Topi LK / Topi PR',   sub:'Sesuai jenis kelamin', gender:true, lk:'Topi LK',   pr:'Topi PR' },
+];
+const clMap = { Koper:'Koper', TasGendong:'Tas Gendong', TasSlempang:'Tas Slempang', TasSendal:'Tas Sendal', Tumbler:'Tumbler', BotolSpray:'Botol Spray', BukuPanduan:'Buku Panduan' };
+
+let clChecked = {};
+
+function getItemName(key, jk) {
+  if (clMap[key]) return clMap[key];
+  if (key === 'IhromMukena') return jk === 'LK' ? 'Kain Ihrom' : 'Mukena';
+  if (key === 'Batik')       return jk === 'LK' ? 'Batik LK'   : 'Batik PR';
+  if (key === 'Topi')        return jk === 'LK' ? 'Topi LK'    : 'Topi PR';
+  return key;
+}
+
+function renderChecklist() {
+  const jk = document.getElementById('a-jk').value;
+  document.getElementById('cl-list').innerHTML = clItems.map(ci => {
+    const ok  = !!clChecked[ci.key];
+    const lbl = ci.gender ? (jk === 'LK' ? ci.lk : ci.pr) : ci.label;
+    return `<div class="cl-item ${ok?'checked':''}" onclick="toggleCL('${ci.key}')">
+      <input type="checkbox" ${ok?'checked':''} onclick="event.stopPropagation();toggleCL('${ci.key}')"/>
+      <div>
+        <div class="cl-label">${lbl}</div>
+        <div class="cl-sub">${ci.sub}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const n = Object.values(clChecked).filter(Boolean).length;
+  document.getElementById('cl-count').textContent =
+    `${n} item dipilih${n === 10 ? ' — FULL SET ✓' : ''}`;
+}
+
+function toggleCL(k) { clChecked[k] = !clChecked[k]; renderChecklist(); }
+function clearChecklist() { clChecked = {}; renderChecklist(); }
+
+async function simpanPengambilan() {
+  const nama = document.getElementById('a-nama').value.trim();
+  const jk   = document.getElementById('a-jk').value;
+  const bln  = document.getElementById('a-bln').value.trim();
+  if (!nama) { showToast('Nama jamaah wajib diisi!', 'error'); return; }
+  if (!bln)  { showToast('Bulan keberangkatan wajib diisi!', 'error'); return; }
+  const keys  = Object.keys(clChecked).filter(k => clChecked[k]);
+  if (!keys.length) { showToast('Pilih minimal 1 barang!', 'error'); return; }
+  const barang  = keys.map(k => getItemName(k, jk));
+  const tanggal = new Date().toISOString().split('T')[0];
+  const user    = getUser();
+  showLoading(true);
+  try {
+    const res = await apiPost({
+      action: 'simpanLog',
+      data: { tanggal, nama_jamaah: nama, jenis_kelamin: jk, bulan_keberangkatan: bln, barang, petugas: user.username }
+    });
+    if (res.ok) {
+      showToast('Pengambilan berhasil disimpan! ✅', 'success');
+      clChecked = {};
+      document.getElementById('a-nama').value = '';
+      document.getElementById('a-bln').value  = '';
+      renderChecklist();
+      setTimeout(() => window.location.href = 'history.html', 1200);
+    } else { showToast('Gagal menyimpan. Coba lagi.', 'error'); }
+  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  showLoading(false);
+}
+
+renderChecklist();
+</script>
+</body>
+</html>
