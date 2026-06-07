@@ -291,7 +291,7 @@ async function loadAll(){
   showLoading(true);
   try{
     const[rl,rr]=await Promise.all([apiGet({action:'getLog'}),apiGet({action:'getRestock'})]);
-    if(rl.ok) logData=rl.data;
+    if(rl.ok) logData=normalizeLogs(rl.data);
     if(rr.ok) restockData=rr.data;
   }catch(e){showToast('Gagal memuat.','error');}
   showLoading(false);
