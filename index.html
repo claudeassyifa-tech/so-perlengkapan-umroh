@@ -3,67 +3,63 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Login — SO Perlengkapan Umroh</title>
+<title>SO Perlengkapan — Assyifa Tour & Travel</title>
 <link rel="stylesheet" href="style.css"/>
-<style>
-  body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
-  .login-wrap { width:100%; max-width:380px; }
-  .login-logo { text-align:center; margin-bottom:2rem; }
-  .login-logo .icon { font-size:52px; display:block; margin-bottom:10px; }
-  .login-logo h1 { font-size:22px; font-weight:700; }
-  .login-logo p { font-size:13px; color:var(--tx2); margin-top:4px; }
-  .login-card { background:var(--bg); border:0.5px solid var(--border2); border-radius:var(--rl); padding:2rem; box-shadow:var(--shadow); }
-  .footer-note { text-align:center; font-size:11px; color:var(--tx3); margin-top:1.5rem; }
-</style>
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memverifikasi...</p></div>
 
 <div class="login-wrap">
-  <div class="login-logo">
-    <span class="icon">🧳</span>
-    <h1>SO Perlengkapan Umroh</h1>
-    <p>Sistem Operasional Travel Umroh</p>
-  </div>
-  <div class="login-card">
-    <div class="fr">
-      <label>Nama Pengguna</label>
-      <select id="login-user">
-        <option value="">— Pilih akun —</option>
-        <option>Admin</option>
-        <option>Azhar Dzaky Muhamad HM</option>
-        <option>Dedi</option>
-      </select>
+  <div style="width:100%;max-width:380px">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="ti ti-box-seam" aria-hidden="true"></i></div>
+        <h1>SO Perlengkapan</h1>
+        <p>Assyifa Tour & Travel</p>
+      </div>
+      <div class="fr">
+        <label>Nama Pengguna</label>
+        <select id="login-user">
+          <option value="">— Pilih akun —</option>
+          <option>Admin</option>
+          <option>Azhar Dzaky Muhamad HM</option>
+          <option>Dedi</option>
+        </select>
+      </div>
+      <div class="fr">
+        <label>PIN</label>
+        <input type="password" id="login-pin" placeholder="Masukkan PIN" maxlength="6"
+               onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="err-msg" id="login-err"></div>
+      <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doLogin()">
+        <i class="ti ti-login" aria-hidden="true"></i> Masuk
+      </button>
     </div>
-    <div class="fr">
-      <label>PIN</label>
-      <input type="password" id="login-pin" placeholder="Masukkan PIN" maxlength="6"
-             onkeydown="if(event.key==='Enter')doLogin()"/>
-    </div>
-    <div class="err-msg" id="login-err"></div>
-    <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doLogin()">🔑 Masuk</button>
+    <p style="text-align:center;font-size:11px;color:var(--tx3);margin-top:1.25rem">
+      © 2026 Assyifa Tour & Travel · SO Perlengkapan Umroh
+    </p>
   </div>
-  <p class="footer-note">© 2026 SO Perlengkapan Umroh · Assyifa Tour & Travel</p>
 </div>
 
 <script src="config.js"></script>
 <script>
-  if (getUser()) window.location.href = 'dashboard.html';
-  async function doLogin() {
-    const user = document.getElementById('login-user').value;
-    const pin  = document.getElementById('login-pin').value;
-    const err  = document.getElementById('login-err');
-    err.style.display = 'none';
-    if (!user) { err.style.display='block'; err.textContent='Pilih nama pengguna dulu.'; return; }
-    if (!pin)  { err.style.display='block'; err.textContent='Masukkan PIN.'; return; }
-    showLoading(true);
-    try {
-      const res = await apiGet({ action:'login', user, pin });
-      if (!res.ok) { err.style.display='block'; err.textContent='PIN salah. Coba lagi.'; showLoading(false); return; }
-      setUser({ username: res.username, role: res.role });
-      window.location.href = 'dashboard.html';
-    } catch(e) { err.style.display='block'; err.textContent='Gagal terhubung. Periksa koneksi.'; showLoading(false); }
-  }
+if (getUser()) window.location.href = 'dashboard.html';
+async function doLogin() {
+  const user=document.getElementById('login-user').value;
+  const pin=document.getElementById('login-pin').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!user){err.style.display='block';err.textContent='Pilih nama pengguna dulu.';return;}
+  if(!pin){err.style.display='block';err.textContent='Masukkan PIN.';return;}
+  showLoading(true);
+  try {
+    const res=await apiGet({action:'login',user,pin});
+    if(!res.ok){err.style.display='block';err.textContent='PIN salah. Coba lagi.';showLoading(false);return;}
+    setUser({username:res.username,role:res.role});
+    window.location.href='dashboard.html';
+  } catch(e){err.style.display='block';err.textContent='Gagal terhubung. Cek koneksi internet.';showLoading(false);}
+}
 </script>
 </body>
 </html>
