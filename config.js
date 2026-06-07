@@ -2,7 +2,7 @@
 //  CONFIG v3 — SO Perlengkapan Umroh
 // ═══════════════════════════════════════════
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyjvCEl3UF_cNddNJtV7Css9G9oOYh05qs4tIbzgQ2X5VR3WwfA06W8mPDTi_8jcsO5zg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwDun2kFWEmI6wuORSZAUXgk-VVBbUqAhuagUXCPG4yKVR6LJqwG1sRFq3kLNA65fUCCA/exec';
 
 const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
