@@ -136,7 +136,10 @@ function getFilteredLogs(){
     const start=((k-1)*7)+1, end=Math.min(k*7,new Date(y,m+1,0).getDate());
     const dStart=`${y}-${String(m+1).padStart(2,'0')}-${String(start).padStart(2,'0')}`;
     const dEnd=`${y}-${String(m+1).padStart(2,'0')}-${String(end).padStart(2,'0')}`;
-    const logs=logData.filter(l=>{const t=l.tanggal||'';return t>=dStart&&t<=dEnd;});
+    const logs=logData.filter(l=>{
+      const t=(l.tanggal||'').substring(0,10);
+      return t>=dStart&&t<=dEnd;
+    });
     const label=`Minggu ${k} ${BLN_FULL[m]} ${y} (${start}–${end} ${BLN_FULL[m]} ${y})`;
     return{logs,label,periodeLabel:label,dStart,dEnd};
   }
@@ -144,7 +147,10 @@ function getFilteredLogs(){
     const dari=document.getElementById('lap-dari').value;
     const sampai=document.getElementById('lap-sampai').value;
     if(!dari||!sampai) return{logs:[],label:'',periodeLabel:''};
-    const logs=logData.filter(l=>{const t=l.tanggal||'';return t>=dari&&t<=sampai;});
+    const logs=logData.filter(l=>{
+      const t=(l.tanggal||'').substring(0,10);
+      return t>=dari&&t<=sampai;
+    });
     return{logs,label:`${fmtDate(dari)} s/d ${fmtDate(sampai)}`,periodeLabel:`Periode: ${fmtDate(dari)} — ${fmtDate(sampai)}`,dStart:dari,dEnd:sampai};
   }
   return{logs:[],label:'',periodeLabel:''};
