@@ -8,12 +8,54 @@
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Menyimpan...</p></div>
-
-<div class="topbar" id="topbar"></div>
+<nav class="navbar" id="navbar"></nav>
 
 <div class="container">
+
+  <!-- ══ FULL SET READY CARD ══ -->
+  <div class="fullset-card">
+    <div class="fs-title">🟢 Koper Full Set Ready</div>
+    <div class="fs-sub">Perlengkapan sudah disiapkan di depan — jamaah bisa langsung ambil</div>
+    <div class="fullset-counter">
+      <div>
+        <div class="fs-count" id="fs-count">—</div>
+        <div class="fs-count-label">unit siap di depan</div>
+      </div>
+      <div class="counter-btns" id="counter-btns" style="display:none">
+        <button class="counter-btn" onclick="ubahFullSet(1)" title="Tambah">+</button>
+        <button class="counter-btn" onclick="ubahFullSet(-1)" title="Kurangi">−</button>
+      </div>
+    </div>
+    <div class="fs-items" id="fs-items-lk"></div>
+    <hr class="divider"/>
+    <div class="card-title" style="font-size:13px;margin-bottom:10px">⚡ Ambil Full Set Langsung</div>
+    <div class="fr">
+      <label>Nama Jamaah</label>
+      <input type="text" id="fs-nama" placeholder="cth: Bambang Sutrisno"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fr" style="margin-bottom:0">
+        <label>Jenis Kelamin</label>
+        <select id="fs-jk">
+          <option value="LK">Laki-laki</option>
+          <option value="PR">Perempuan</option>
+        </select>
+      </div>
+      <div class="fr" style="margin-bottom:0">
+        <label>Bulan Keberangkatan</label>
+        <input type="text" id="fs-bln" placeholder="cth: Juni 2026"/>
+      </div>
+    </div>
+    <button class="btn btn-green btn-block" style="margin-top:12px" onclick="ambilFullSet()">
+      ✅ Ambil Full Set (1 Koper Lengkap)
+    </button>
+  </div>
+
+  <div style="text-align:center;font-size:13px;color:var(--tx2);margin:-4px 0 14px">— atau ambil satuan di bawah —</div>
+
+  <!-- ══ PENGAMBILAN SATUAN ══ -->
   <div class="card">
-    <div class="card-title">👤 Data Jamaah</div>
+    <div class="card-title">👤 Data Jamaah — Pengambilan Satuan</div>
     <div class="fr">
       <label>Nama Jamaah</label>
       <input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/>
@@ -36,43 +78,99 @@
   <div class="card">
     <div class="card-title">✅ Checklist Barang Keluar</div>
     <div id="cl-list"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;
-                padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
       <span id="cl-count" style="font-size:13px;color:var(--tx2)">0 item dipilih</span>
       <button class="btn btn-sm" onclick="clearChecklist()">🔄 Reset</button>
     </div>
     <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="simpanPengambilan()">
-      💾 Simpan Pengambilan
+      💾 Simpan Pengambilan Satuan
     </button>
   </div>
+
 </div>
 
 <script src="config.js"></script>
 <script>
 if (!requireLogin()) throw new Error('not logged in');
-renderTopbar('🛍️ Pengambilan Barang', 'Catat barang keluar jamaah');
+renderNavbar('ambil.html');
 
+const user = getUser();
+let fsJumlah = 0;
+
+// Tampilkan tombol +/- hanya untuk admin
+if (user.role === 'admin') {
+  document.getElementById('counter-btns').style.display = 'flex';
+}
+
+// Render preview item full set
+function renderFSItems() {
+  document.getElementById('fs-items-lk').innerHTML =
+    FULLSET_ITEMS_LK.map(i => `<span class="fs-pill">${i}</span>`).join('');
+}
+
+async function loadFullSet() {
+  try {
+    const res = await apiGet({ action: 'getFullSet' });
+    if (res.ok) { fsJumlah = res.jumlah; document.getElementById('fs-count').textContent = fsJumlah; }
+  } catch(e) { document.getElementById('fs-count').textContent = '?'; }
+}
+
+async function ubahFullSet(delta) {
+  const baru = Math.max(0, fsJumlah + delta);
+  showLoading(true);
+  try {
+    const res = await apiPost({ action: 'updateFullSet', jumlah: baru });
+    if (res.ok) { fsJumlah = res.jumlah; document.getElementById('fs-count').textContent = fsJumlah; showToast(`Full Set Ready: ${fsJumlah} unit`, 'success'); }
+    else showToast(res.msg || 'Gagal update', 'error');
+  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  showLoading(false);
+}
+
+async function ambilFullSet() {
+  const nama = document.getElementById('fs-nama').value.trim();
+  const jk   = document.getElementById('fs-jk').value;
+  const bln  = document.getElementById('fs-bln').value.trim();
+  if (!nama) { showToast('Nama jamaah wajib diisi!', 'error'); return; }
+  if (!bln)  { showToast('Bulan keberangkatan wajib diisi!', 'error'); return; }
+  if (fsJumlah <= 0) { showToast('Stok Full Set Ready habis! Tambah dulu.', 'error'); return; }
+  const barang  = jk === 'LK' ? FULLSET_ITEMS_LK : FULLSET_ITEMS_PR;
+  const tanggal = new Date().toISOString().split('T')[0];
+  showLoading(true);
+  try {
+    const res = await apiPost({ action:'ambilFullSet', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:jk, bulan_keberangkatan:bln, barang, petugas:user.username, tipe:'fullset' } });
+    if (res.ok) {
+      fsJumlah = res.sisaReady;
+      document.getElementById('fs-count').textContent = fsJumlah;
+      document.getElementById('fs-nama').value = '';
+      document.getElementById('fs-bln').value  = '';
+      showToast(`✅ Full Set berhasil dicatat! Sisa ready: ${fsJumlah}`, 'success');
+      setTimeout(() => window.location.href = 'history.html', 1400);
+    } else { showToast(res.msg || 'Gagal menyimpan.', 'error'); }
+  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+  showLoading(false);
+}
+
+// ── Pengambilan satuan ────────────────────────────────────────
 const clItems = [
-  { key:'Koper',      label:'Koper',              sub:'1 buah' },
-  { key:'TasGendong', label:'Tas Gendong',         sub:'1 buah' },
-  { key:'TasSlempang',label:'Tas Slempang',        sub:'1 buah' },
-  { key:'TasSendal',  label:'Tas Sendal',          sub:'1 buah' },
-  { key:'IhromMukena',label:'Kain Ihrom / Mukena', sub:'Sesuai jenis kelamin', gender:true, lk:'Kain Ihrom', pr:'Mukena' },
-  { key:'Batik',      label:'Batik LK / Batik PR', sub:'Sesuai jenis kelamin', gender:true, lk:'Batik LK',   pr:'Batik PR' },
-  { key:'Tumbler',    label:'Tumbler',             sub:'1 buah' },
-  { key:'BotolSpray', label:'Botol Spray',         sub:'1 buah' },
-  { key:'BukuPanduan',label:'Buku Panduan',        sub:'1 buah' },
-  { key:'Topi',       label:'Topi LK / Topi PR',   sub:'Sesuai jenis kelamin', gender:true, lk:'Topi LK',   pr:'Topi PR' },
+  { key:'Koper',       label:'Koper',              sub:'1 buah' },
+  { key:'TasGendong',  label:'Tas Gendong',         sub:'1 buah' },
+  { key:'TasSlempang', label:'Tas Slempang',        sub:'1 buah' },
+  { key:'TasSendal',   label:'Tas Sendal',          sub:'1 buah' },
+  { key:'IhromMukena', label:'Kain Ihrom / Mukena', sub:'Sesuai jenis kelamin', gender:true, lk:'Kain Ihrom', pr:'Mukena' },
+  { key:'Batik',       label:'Batik LK / Batik PR', sub:'Sesuai jenis kelamin', gender:true, lk:'Batik LK',   pr:'Batik PR' },
+  { key:'Tumbler',     label:'Tumbler',             sub:'1 buah' },
+  { key:'BotolSpray',  label:'Botol Spray',         sub:'1 buah' },
+  { key:'BukuPanduan', label:'Buku Panduan',        sub:'1 buah' },
+  { key:'Topi',        label:'Topi LK / Topi PR',   sub:'Sesuai jenis kelamin', gender:true, lk:'Topi LK',   pr:'Topi PR' },
 ];
 const clMap = { Koper:'Koper', TasGendong:'Tas Gendong', TasSlempang:'Tas Slempang', TasSendal:'Tas Sendal', Tumbler:'Tumbler', BotolSpray:'Botol Spray', BukuPanduan:'Buku Panduan' };
-
 let clChecked = {};
 
 function getItemName(key, jk) {
   if (clMap[key]) return clMap[key];
-  if (key === 'IhromMukena') return jk === 'LK' ? 'Kain Ihrom' : 'Mukena';
-  if (key === 'Batik')       return jk === 'LK' ? 'Batik LK'   : 'Batik PR';
-  if (key === 'Topi')        return jk === 'LK' ? 'Topi LK'    : 'Topi PR';
+  if (key==='IhromMukena') return jk==='LK'?'Kain Ihrom':'Mukena';
+  if (key==='Batik')       return jk==='LK'?'Batik LK':'Batik PR';
+  if (key==='Topi')        return jk==='LK'?'Topi LK':'Topi PR';
   return key;
 }
 
@@ -80,53 +178,40 @@ function renderChecklist() {
   const jk = document.getElementById('a-jk').value;
   document.getElementById('cl-list').innerHTML = clItems.map(ci => {
     const ok  = !!clChecked[ci.key];
-    const lbl = ci.gender ? (jk === 'LK' ? ci.lk : ci.pr) : ci.label;
+    const lbl = ci.gender ? (jk==='LK'?ci.lk:ci.pr) : ci.label;
     return `<div class="cl-item ${ok?'checked':''}" onclick="toggleCL('${ci.key}')">
       <input type="checkbox" ${ok?'checked':''} onclick="event.stopPropagation();toggleCL('${ci.key}')"/>
-      <div>
-        <div class="cl-label">${lbl}</div>
-        <div class="cl-sub">${ci.sub}</div>
-      </div>
+      <div><div class="cl-label">${lbl}</div><div class="cl-sub">${ci.sub}</div></div>
     </div>`;
   }).join('');
   const n = Object.values(clChecked).filter(Boolean).length;
-  document.getElementById('cl-count').textContent =
-    `${n} item dipilih${n === 10 ? ' — FULL SET ✓' : ''}`;
+  document.getElementById('cl-count').textContent = `${n} item dipilih${n===10?' — FULL SET ✓':''}`;
 }
-
-function toggleCL(k) { clChecked[k] = !clChecked[k]; renderChecklist(); }
-function clearChecklist() { clChecked = {}; renderChecklist(); }
+function toggleCL(k) { clChecked[k]=!clChecked[k]; renderChecklist(); }
+function clearChecklist() { clChecked={}; renderChecklist(); }
 
 async function simpanPengambilan() {
   const nama = document.getElementById('a-nama').value.trim();
   const jk   = document.getElementById('a-jk').value;
   const bln  = document.getElementById('a-bln').value.trim();
-  if (!nama) { showToast('Nama jamaah wajib diisi!', 'error'); return; }
-  if (!bln)  { showToast('Bulan keberangkatan wajib diisi!', 'error'); return; }
-  const keys  = Object.keys(clChecked).filter(k => clChecked[k]);
-  if (!keys.length) { showToast('Pilih minimal 1 barang!', 'error'); return; }
-  const barang  = keys.map(k => getItemName(k, jk));
+  if (!nama) { showToast('Nama jamaah wajib diisi!','error'); return; }
+  if (!bln)  { showToast('Bulan keberangkatan wajib diisi!','error'); return; }
+  const keys = Object.keys(clChecked).filter(k=>clChecked[k]);
+  if (!keys.length) { showToast('Pilih minimal 1 barang!','error'); return; }
+  const barang  = keys.map(k=>getItemName(k,jk));
   const tanggal = new Date().toISOString().split('T')[0];
-  const user    = getUser();
   showLoading(true);
   try {
-    const res = await apiPost({
-      action: 'simpanLog',
-      data: { tanggal, nama_jamaah: nama, jenis_kelamin: jk, bulan_keberangkatan: bln, barang, petugas: user.username }
-    });
-    if (res.ok) {
-      showToast('Pengambilan berhasil disimpan! ✅', 'success');
-      clChecked = {};
-      document.getElementById('a-nama').value = '';
-      document.getElementById('a-bln').value  = '';
-      renderChecklist();
-      setTimeout(() => window.location.href = 'history.html', 1200);
-    } else { showToast('Gagal menyimpan. Coba lagi.', 'error'); }
-  } catch(e) { showToast('Gagal terhubung.', 'error'); }
+    const res = await apiPost({ action:'simpanLog', data:{ tanggal, nama_jamaah:nama, jenis_kelamin:jk, bulan_keberangkatan:bln, barang, petugas:user.username, tipe:'satuan' } });
+    if (res.ok) { showToast('Pengambilan berhasil disimpan! ✅','success'); clChecked={}; document.getElementById('a-nama').value=''; document.getElementById('a-bln').value=''; renderChecklist(); setTimeout(()=>window.location.href='history.html',1200); }
+    else showToast('Gagal menyimpan. Coba lagi.','error');
+  } catch(e) { showToast('Gagal terhubung.','error'); }
   showLoading(false);
 }
 
 renderChecklist();
+renderFSItems();
+loadFullSet();
 </script>
 </body>
 </html>
