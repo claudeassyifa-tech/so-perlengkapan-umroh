@@ -126,7 +126,15 @@ function getFilteredLogs(){
     const thn=document.getElementById('lap-thn').value;
     if(!bln) return{logs:[],label:'',periodeLabel:''};
     const key=`${bln} ${thn}`;
-    const logs=logData.filter(l=>(l.bulan_keberangkatan||'')=== key);
+    // Debug: tampilkan semua nilai bulan yang ada
+    const allBulan=[...new Set(logData.map(l=>l.bulan_keberangkatan||''))];
+    console.log('Mencari key:', JSON.stringify(key));
+    console.log('Semua bulan di data:', allBulan.map(b=>JSON.stringify(b)));
+    const logs=logData.filter(l=>{
+      const blnData=(l.bulan_keberangkatan||'').toString().trim();
+      return blnData.toLowerCase()===key.toLowerCase();
+    });
+    console.log('Hasil filter:', logs.length, 'baris');
     return{logs,label:key,periodeLabel:`Bulan Keberangkatan: ${key}`};
   }
   if(currentMode==='minggu'){
