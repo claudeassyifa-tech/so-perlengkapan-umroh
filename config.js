@@ -98,11 +98,13 @@ function tipeBadge(tipe) {
     'standby_pr':         '<span class="badge b-maroon" style="margin-left:4px">Standby PR</span>',
     'standby_siapkan_lk': '<span class="badge b-warn" style="margin-left:4px">Siapkan LK</span>',
     'standby_siapkan_pr': '<span class="badge b-warn" style="margin-left:4px">Siapkan PR</span>',
-    'rombongan_lk':       '<span class="badge b-purple" style="margin-left:4px">Rombongan LK</span>',
-    'rombongan_pr':       '<span class="badge b-purple" style="margin-left:4px">Rombongan PR</span>',
+    'rombongan':          '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
+    'rombongan_lk':       '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
+    'rombongan_pr':       '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
     'restock':            '<span class="badge b-green" style="margin-left:4px">Restock</span>',
   };
   return map[tipe] || '<span class="badge b-info" style="margin-left:4px">Satuan</span>';
 }
 function isSiapkan(tipe) { return tipe && tipe.startsWith('standby_siapkan'); }
 function isRestock(tipe) { return tipe === 'restock'; }
+function isRombongan(tipe) { return tipe && tipe.startsWith('rombongan'); }
