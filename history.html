@@ -22,9 +22,12 @@
       <option>Azhar Dzaky Muhamad HM</option>
       <option>Dedi</option>
     </select>
-    <select id="log-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
+    <select id="log-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
       <option value="">Semua Tipe</option>
-      <option value="fullset">Full Set</option>
+      <option value="standby_lk">Standby LK</option>
+      <option value="standby_pr">Standby PR</option>
+      <option value="standby_siapkan_lk">Siapkan LK</option>
+      <option value="standby_siapkan_pr">Siapkan PR</option>
       <option value="satuan">Satuan</option>
     </select>
     <button class="btn btn-sm" onclick="exportCSV()" title="Export CSV">⬇️ CSV</button>
@@ -45,6 +48,18 @@ function updateFilter() {
   sel.innerHTML=`<option value="">Semua Bulan</option>`+blns.map(b=>`<option ${b===cur?'selected':''} value="${b}">${b}</option>`).join('');
 }
 
+function tipeBadge(tipe) {
+  if (tipe === 'standby_lk') return '<span class="badge b-info" style="margin-left:4px">Standby LK</span>';
+  if (tipe === 'standby_pr') return '<span class="badge" style="margin-left:4px;background:#fbeaf0;color:#993556">Standby PR</span>';
+  if (tipe === 'standby_siapkan_lk') return '<span class="badge b-warn" style="margin-left:4px">Siapkan LK</span>';
+  if (tipe === 'standby_siapkan_pr') return '<span class="badge b-warn" style="margin-left:4px">Siapkan PR</span>';
+  return '<span class="badge b-info" style="margin-left:4px">Satuan</span>';
+}
+
+function isSiapkan(tipe) {
+  return tipe && tipe.startsWith('standby_siapkan');
+}
+
 function renderLog(q='',bln='',pet='',tipe='') {
   const filtered=logData.filter(l=>{
     const nama=(l.nama_jamaah||'').toLowerCase();
@@ -57,15 +72,16 @@ function renderLog(q='',bln='',pet='',tipe='') {
     const d=new Date(l.tanggal||'');
     const day=isNaN(d)?'—':d.getDate(), mon=isNaN(d)?'—':BLN[d.getMonth()];
     const items=Array.isArray(l.barang)?l.barang:[];
-    const isFS=l.tipe==='fullset';
+    const siapkan=isSiapkan(l.tipe);
+    const namaDisplay = siapkan
+      ? `<span style="font-weight:600;color:var(--tx2)">Persiapan Koper Standby</span>`
+      : `${l.nama_jamaah} <span style="font-size:11px;font-weight:400;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>`;
+    const blnDisplay = siapkan ? `${items.length} item disiapkan ke depan` : `📅 ${l.bulan_keberangkatan}`;
     return `<div class="log-row">
       <div class="log-date"><div class="log-d">${day}</div><div class="log-m">${mon}</div></div>
       <div class="log-info">
-        <div class="log-n">${l.nama_jamaah}
-          <span style="font-size:11px;font-weight:400;color:var(--tx2)">(${l.jenis_kelamin==='LK'?'Laki-laki':'Perempuan'})</span>
-          ${isFS?'<span class="badge b-green" style="margin-left:4px">Full Set</span>':'<span class="badge b-info" style="margin-left:4px">Satuan</span>'}
-        </div>
-        <div class="log-s">📅 ${l.bulan_keberangkatan}</div>
+        <div class="log-n">${namaDisplay}${tipeBadge(l.tipe)}</div>
+        <div class="log-s">${siapkan?'📦':'📅'} ${blnDisplay}</div>
         <div class="log-s">👤 ${l.petugas}</div>
         <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-info">${items.length} item</span></div>
       </div>
