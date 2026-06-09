@@ -3,207 +3,259 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Pengambilan Barang — SO Perlengkapan</title>
+<title>Pengambilan — SO Perlengkapan</title>
 <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memproses...</p></div>
 <nav class="navbar" id="navbar"></nav>
 
+<!-- Tab bar sub menu -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('standby')" id="tab-standby">🧳 Koper Standby</button>
+  <button class="tab-btn" onclick="switchTab('rombongan')" id="tab-rombongan">👨‍👩‍👧 Rombongan</button>
+  <button class="tab-btn" onclick="switchTab('satuan')" id="tab-satuan">📦 Satuan</button>
+</div>
+
 <div class="container">
 
-  <!-- KOPER STANDBY -->
-  <div class="section-label"><i class="ti ti-box-seam" aria-hidden="true"></i> Koper Standby — Siap di Depan</div>
-  <div class="standby-wrap">
-    <!-- LK -->
-    <div class="standby-card lk">
-      <div class="sc-gender lk"><i class="ti ti-man" aria-hidden="true"></i> Laki-laki</div>
-      <div class="sc-title lk">Koper Standby LK</div>
-      <div class="sc-stok lk" id="stok-lk">—</div>
-      <div class="sc-sub">unit siap di depan</div>
-      <div class="items-preview" id="items-lk"></div>
-      <div class="sc-actions">
-        <div class="sc-siapkan">
-          <input type="number" id="siap-lk-qty" min="1" value="1"/>
-          <button class="sc-btn lk" onclick="siapkanStandby('LK')">
-            <i class="ti ti-building-warehouse" aria-hidden="true"></i> Siapkan dari Gudang
-          </button>
+  <!-- ═══ TAB STANDBY ═══ -->
+  <div id="sec-standby">
+    <div class="standby-wrap">
+      <!-- LK -->
+      <div class="standby-card lk">
+        <div class="sc-gender lk">👨 Laki-laki</div>
+        <div class="sc-title lk">Koper Standby LK</div>
+        <div class="sc-stok lk" id="stok-lk">—</div>
+        <div class="sc-sub">unit siap di depan</div>
+        <div class="items-preview" id="items-lk"></div>
+
+        <!-- Siapkan dari Gudang -->
+        <div class="standby-section">
+          <div class="standby-section-title">📦 Siapkan dari Gudang</div>
+          <div class="sc-siapkan">
+            <input type="number" id="siap-lk-qty" min="1" value="1"/>
+            <button class="sc-btn lk" style="flex:1;justify-content:center" onclick="siapkanStandby('LK')">
+              + Siapkan ke Depan
+            </button>
+          </div>
         </div>
-        <button class="sc-btn lk sc-btn-full" onclick="toggleForm('LK')">
-          <i class="ti ti-user-check" aria-hidden="true"></i> Jamaah Ambil Standby LK
-        </button>
-      </div>
-      <div class="ambil-form" id="form-lk">
-        <div class="fr"><label>Nama Jamaah</label><input type="text" id="lk-nama" placeholder="cth: Bambang Sutrisno"/></div>
-        <div id="lk-bln-wrap"></div>
-        <button class="sc-btn lk sc-btn-full" style="margin-top:8px" onclick="ambilStandby('LK')">
-          <i class="ti ti-check" aria-hidden="true"></i> Konfirmasi Ambil
-        </button>
-      </div>
-    </div>
-    <!-- PR -->
-    <div class="standby-card pr">
-      <div class="sc-gender pr"><i class="ti ti-woman" aria-hidden="true"></i> Perempuan</div>
-      <div class="sc-title pr">Koper Standby PR</div>
-      <div class="sc-stok pr" id="stok-pr">—</div>
-      <div class="sc-sub">unit siap di depan</div>
-      <div class="items-preview" id="items-pr"></div>
-      <div class="sc-actions">
-        <div class="sc-siapkan">
-          <input type="number" id="siap-pr-qty" min="1" value="1"/>
-          <button class="sc-btn pr" onclick="siapkanStandby('PR')">
-            <i class="ti ti-building-warehouse" aria-hidden="true"></i> Siapkan dari Gudang
+
+        <!-- Distribusi ke Jamaah -->
+        <div class="standby-section">
+          <div class="standby-section-title">🛍️ Distribusi ke Jamaah</div>
+          <button class="sc-btn lk sc-btn-full" onclick="toggleForm('LK')">
+            Catat Pengambilan Jamaah LK ▾
           </button>
+          <div class="ambil-form" id="form-lk">
+            <div class="fr" style="margin-top:8px"><label>Nama Jamaah</label><input type="text" id="lk-nama" placeholder="cth: Bambang Sutrisno"/></div>
+            <div id="lk-bln-wrap" style="margin-bottom:8px"></div>
+            <button class="sc-btn lk sc-btn-full" onclick="ambilStandby('LK')">✅ Konfirmasi Ambil LK</button>
+          </div>
         </div>
-        <button class="sc-btn pr sc-btn-full" onclick="toggleForm('PR')">
-          <i class="ti ti-user-check" aria-hidden="true"></i> Jamaah Ambil Standby PR
-        </button>
       </div>
-      <div class="ambil-form" id="form-pr">
-        <div class="fr"><label>Nama Jamaah</label><input type="text" id="pr-nama" placeholder="cth: Siti Aminah"/></div>
-        <div id="pr-bln-wrap"></div>
-        <button class="sc-btn pr sc-btn-full" style="margin-top:8px" onclick="ambilStandby('PR')">
-          <i class="ti ti-check" aria-hidden="true"></i> Konfirmasi Ambil
-        </button>
+
+      <!-- PR -->
+      <div class="standby-card pr">
+        <div class="sc-gender pr">👩 Perempuan</div>
+        <div class="sc-title pr">Koper Standby PR</div>
+        <div class="sc-stok pr" id="stok-pr">—</div>
+        <div class="sc-sub">unit siap di depan</div>
+        <div class="items-preview" id="items-pr"></div>
+
+        <!-- Siapkan dari Gudang -->
+        <div class="standby-section">
+          <div class="standby-section-title">📦 Siapkan dari Gudang</div>
+          <div class="sc-siapkan">
+            <input type="number" id="siap-pr-qty" min="1" value="1"/>
+            <button class="sc-btn pr" style="flex:1;justify-content:center" onclick="siapkanStandby('PR')">
+              + Siapkan ke Depan
+            </button>
+          </div>
+        </div>
+
+        <!-- Distribusi ke Jamaah -->
+        <div class="standby-section">
+          <div class="standby-section-title">🛍️ Distribusi ke Jamaah</div>
+          <button class="sc-btn pr sc-btn-full" onclick="toggleForm('PR')">
+            Catat Pengambilan Jamaah PR ▾
+          </button>
+          <div class="ambil-form" id="form-pr">
+            <div class="fr" style="margin-top:8px"><label>Nama Jamaah</label><input type="text" id="pr-nama" placeholder="cth: Siti Aminah"/></div>
+            <div id="pr-bln-wrap" style="margin-bottom:8px"></div>
+            <button class="sc-btn pr sc-btn-full" onclick="ambilStandby('PR')">✅ Konfirmasi Ambil PR</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ROMBONGAN -->
-  <div class="rombongan-card">
-    <div class="card-title" style="color:#3b6d11;margin-bottom:10px">
-      <i class="ti ti-users-group" aria-hidden="true"></i> Ambil Rombongan dari Standby
+  <!-- ═══ TAB ROMBONGAN ═══ -->
+  <div id="sec-rombongan" style="display:none">
+    <div class="card card-accent">
+      <div class="card-title">👨‍👩‍👧 Pengambilan Rombongan</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:14px">Untuk pengambilan beberapa koper sekaligus dari standby — keluarga atau grup jamaah.</p>
+      <div class="fr"><label>Nama Rombongan / Grup</label><input type="text" id="rmb-nama" placeholder="cth: Keluarga Pa Adam"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="fr" style="margin-bottom:0"><label>Jumlah Koper LK</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="qty-btn" onclick="adjRmb('lk',-1)">−</button>
+            <input class="qty-num" type="number" id="rmb-lk" min="0" value="0"/>
+            <button class="qty-btn" onclick="adjRmb('lk',1)">+</button>
+          </div>
+        </div>
+        <div class="fr" style="margin-bottom:0"><label>Jumlah Koper PR</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="qty-btn" onclick="adjRmb('pr',-1)">−</button>
+            <input class="qty-num" type="number" id="rmb-pr" min="0" value="0"/>
+            <button class="qty-btn" onclick="adjRmb('pr',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div id="rmb-bln-wrap" style="margin-bottom:12px"></div>
+      <div class="fr" style="margin-bottom:14px">
+        <label>Keterangan Anggota</label>
+        <textarea id="rmb-ket" placeholder="cth: Pa Adam (LK), Bu Siska (PR), Brian (LK)..."></textarea>
+      </div>
+      <!-- Info standby saat ini -->
+      <div style="background:var(--bg2);border-radius:var(--r);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--tx2)">
+        Standby tersedia: <strong id="rmb-info-lk">—</strong> LK · <strong id="rmb-info-pr">—</strong> PR
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" onclick="ambilRombongan()">
+        ✅ Simpan Pengambilan Rombongan
+      </button>
     </div>
-    <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Untuk pengambilan beberapa koper sekaligus — misal satu keluarga atau grup.</p>
-    <div class="fr"><label>Nama Rombongan</label><input type="text" id="rmb-nama" placeholder="cth: Keluarga Pa Adam"/></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="fr" style="margin-bottom:0"><label>Jumlah Koper LK</label><input type="number" id="rmb-lk" min="0" value="0"/></div>
-      <div class="fr" style="margin-bottom:0"><label>Jumlah Koper PR</label><input type="number" id="rmb-pr" min="0" value="0"/></div>
-    </div>
-    <div id="rmb-bln-wrap"></div>
-    <div class="fr" style="margin-top:10px;margin-bottom:0">
-      <label>Keterangan Anggota Rombongan</label>
-      <textarea id="rmb-ket" placeholder="cth: Pa Adam (LK), Bu Siska (PR), Brian (LK)..."></textarea>
-    </div>
-    <button class="btn btn-green btn-block" style="margin-top:12px" onclick="ambilRombongan()">
-      <i class="ti ti-check" aria-hidden="true"></i> Simpan Pengambilan Rombongan
-    </button>
   </div>
 
-  <div style="text-align:center;font-size:13px;color:var(--tx2);margin:-4px 0 14px">— atau ambil satuan langsung dari gudang —</div>
-
-  <!-- SATUAN -->
-  <div class="card">
-    <div class="card-title"><i class="ti ti-clipboard-list" aria-hidden="true"></i> Pengambilan Satuan dari Gudang</div>
-    <div class="fr"><label>Nama Jamaah</label><input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div class="fr" style="margin-bottom:0"><label>Jenis Kelamin</label>
-        <select id="a-jk" onchange="renderChecklist()"><option value="LK">Laki-laki</option><option value="PR">Perempuan</option></select>
+  <!-- ═══ TAB SATUAN ═══ -->
+  <div id="sec-satuan" style="display:none">
+    <div class="card card-accent">
+      <div class="card-title">📦 Pengambilan Satuan dari Gudang</div>
+      <div class="fr"><label>Nama Jamaah / Rombongan</label><input type="text" id="a-nama" placeholder="cth: Bambang Sutrisno"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="fr" style="margin-bottom:0"><label>Jenis Kelamin</label>
+          <select id="a-jk" onchange="renderItemList()"><option value="LK">Laki-laki</option><option value="PR">Perempuan</option></select>
+        </div>
+      </div>
+      <div id="a-bln-wrap" style="margin-bottom:12px"></div>
+      <div class="fr" style="margin-bottom:14px">
+        <label>Keterangan (opsional)</label>
+        <input type="text" id="a-ket" placeholder="cth: Sisa pengambilan batch 1"/>
       </div>
     </div>
-    <div id="a-bln-wrap"></div>
-  </div>
 
-  <div class="card">
-    <div class="card-title"><i class="ti ti-checklist" aria-hidden="true"></i> Checklist Barang Keluar</div>
-    <div id="cl-list"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:0.5px solid var(--border);margin-top:4px">
-      <span id="cl-count" style="font-size:13px;color:var(--tx2)">0 item dipilih</span>
-      <button class="btn btn-sm btn-outline" onclick="clearChecklist()"><i class="ti ti-refresh" aria-hidden="true"></i> Reset</button>
+    <div class="card">
+      <div class="card-title">📋 Barang yang Diambil</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Masukkan jumlah per item. Kosongkan atau isi 0 jika tidak diambil.</p>
+      <div id="item-list"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+        <span id="item-summary" style="font-size:13px;color:var(--tx2)">0 item dipilih</span>
+        <button class="btn btn-sm btn-outline" onclick="resetItems()">🔄 Reset</button>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:12px" onclick="simpanSatuan()">
+        💾 Simpan Pengambilan
+      </button>
     </div>
-    <button class="btn btn-primary btn-block" style="margin-top:11px" onclick="simpanPengambilan()">
-      <i class="ti ti-device-floppy" aria-hidden="true"></i> Simpan Pengambilan Satuan
-    </button>
   </div>
 
 </div>
 
 <script src="config.js"></script>
 <script>
-if(!requireLogin()) throw new Error('not logged in');
+if(!requireLogin()) throw '';
 renderNavbar('ambil.html');
 const user=getUser();
-let standbyLK=0,standbyPR=0;
+let standbyLK=0, standbyPR=0;
 
-const BULAN_LIST=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const TAHUN_LIST=[2025,2026,2027,2028,2029,2030];
+// Init dropdown bulan
+document.getElementById('lk-bln-wrap').innerHTML = bulanSelect('lk-bln','lk-thn');
+document.getElementById('pr-bln-wrap').innerHTML = bulanSelect('pr-bln','pr-thn');
+document.getElementById('rmb-bln-wrap').innerHTML = bulanSelect('rmb-bln','rmb-thn');
+document.getElementById('a-bln-wrap').innerHTML = bulanSelect('a-bln','a-thn');
 
-function bulanSelect(idBln,idThn){
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div class="fr" style="margin-bottom:0"><label>Bulan Keberangkatan</label>
-      <select id="${idBln}">
-        <option value="">— Pilih bulan —</option>
-        ${BULAN_LIST.map(b=>`<option value="${b}">${b}</option>`).join('')}
-      </select>
-    </div>
-    <div class="fr" style="margin-bottom:0"><label>Tahun</label>
-      <select id="${idThn}">
-        ${TAHUN_LIST.map(y=>`<option value="${y}" ${y===2026?'selected':''}>${y}</option>`).join('')}
-      </select>
-    </div>
-  </div>`;
+// Tab switching
+function switchTab(name){
+  ['standby','rombongan','satuan'].forEach(t=>{
+    document.getElementById(`sec-${t}`).style.display=t===name?'block':'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===name);
+  });
 }
 
-function getBln(idBln,idThn){
-  const b=document.getElementById(idBln).value;
-  const t=document.getElementById(idThn).value;
-  return b?`${b} ${t}`:'';
-}
-
-function initDropdowns(){
-  document.getElementById('lk-bln-wrap').innerHTML=bulanSelect('lk-bln','lk-thn');
-  document.getElementById('pr-bln-wrap').innerHTML=bulanSelect('pr-bln','pr-thn');
-  document.getElementById('rmb-bln-wrap').innerHTML=bulanSelect('rmb-bln','rmb-thn');
-  document.getElementById('a-bln-wrap').innerHTML=bulanSelect('a-bln','a-thn');
-}
-
+// Items preview
 function renderItemsPreview(){
   document.getElementById('items-lk').innerHTML=ITEMS_LK.map(i=>`<span class="items-pill lk">${i}</span>`).join('');
   document.getElementById('items-pr').innerHTML=ITEMS_PR.map(i=>`<span class="items-pill pr">${i}</span>`).join('');
 }
 
+// Load standby
 async function loadStandby(){
   try{
     const res=await apiGet({action:'getStandby'});
-    if(res.ok){standbyLK=res.lk;standbyPR=res.pr;document.getElementById('stok-lk').textContent=standbyLK;document.getElementById('stok-pr').textContent=standbyPR;}
+    if(res.ok){
+      standbyLK=res.lk; standbyPR=res.pr;
+      document.getElementById('stok-lk').textContent=standbyLK;
+      document.getElementById('stok-pr').textContent=standbyPR;
+      document.getElementById('rmb-info-lk').textContent=standbyLK;
+      document.getElementById('rmb-info-pr').textContent=standbyPR;
+    }
   }catch(e){}
 }
 
-function toggleForm(gender){
-  document.getElementById(gender==='LK'?'form-lk':'form-pr').classList.toggle('open');
+// Toggle form distribusi standby
+function toggleForm(g){
+  const el=document.getElementById(`form-${g.toLowerCase()}`);
+  el.classList.toggle('open');
 }
 
-async function siapkanStandby(gender){
-  const qty=parseInt(document.getElementById(`siap-${gender.toLowerCase()}-qty`).value)||0;
+// Siapkan standby dari gudang
+async function siapkanStandby(g){
+  const qty=parseInt(document.getElementById(`siap-${g.toLowerCase()}-qty`).value)||0;
   if(qty<1){showToast('Masukkan jumlah minimal 1!','error');return;}
-  if(!confirm(`Siapkan ${qty} Koper Standby ${gender} dari gudang?\nStok gudang akan berkurang.`))return;
+  if(!confirm(`Siapkan ${qty} Koper Standby ${g} dari gudang?\nStok gudang akan berkurang.`))return;
   showLoading(true);
   try{
-    const res=await apiPost({action:'siapkanStandby',gender,jumlah:qty});
-    if(res.ok){standbyLK=res.standby_lk;standbyPR=res.standby_pr;document.getElementById('stok-lk').textContent=standbyLK;document.getElementById('stok-pr').textContent=standbyPR;showToast(`✅ ${qty} Koper Standby ${gender} berhasil disiapkan!`,'success');}
-    else showToast(res.msg||'Gagal.','error');
+    const res=await apiPost({action:'siapkanStandby',gender:g,jumlah:qty});
+    if(res.ok){
+      standbyLK=res.standby_lk; standbyPR=res.standby_pr;
+      document.getElementById('stok-lk').textContent=standbyLK;
+      document.getElementById('stok-pr').textContent=standbyPR;
+      document.getElementById('rmb-info-lk').textContent=standbyLK;
+      document.getElementById('rmb-info-pr').textContent=standbyPR;
+      showToast(`✅ ${qty} Koper Standby ${g} berhasil disiapkan!`,'success');
+    } else showToast(res.msg||'Gagal.','error');
   }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
 
-async function ambilStandby(gender){
-  const namaId=gender==='LK'?'lk-nama':'pr-nama';
-  const nama=document.getElementById(namaId).value.trim();
-  const bln=getBln(gender==='LK'?'lk-bln':'pr-bln',gender==='LK'?'lk-thn':'pr-thn');
-  const stok=gender==='LK'?standbyLK:standbyPR;
+// Ambil standby (1 jamaah)
+async function ambilStandby(g){
+  const nama=document.getElementById(`${g.toLowerCase()}-nama`).value.trim();
+  const bln=getBln(`${g.toLowerCase()}-bln`,`${g.toLowerCase()}-thn`);
+  const stok=g==='LK'?standbyLK:standbyPR;
   if(!nama){showToast('Nama jamaah wajib diisi!','error');return;}
   if(!bln){showToast('Pilih bulan keberangkatan!','error');return;}
-  if(stok<=0){showToast(`Koper Standby ${gender} habis!`,'error');return;}
-  const barang=gender==='LK'?ITEMS_LK:ITEMS_PR;
+  if(stok<=0){showToast(`Koper Standby ${g} habis!`,'error');return;}
+  const barang=g==='LK'?ITEMS_LK:ITEMS_PR;
   showLoading(true);
   try{
-    const res=await apiPost({action:'ambilStandby',data:{tanggal:isoToday(),nama_jamaah:nama,jenis_kelamin:gender,bulan_keberangkatan:bln,barang,petugas:user.username}});
-    if(res.ok){if(gender==='LK'){standbyLK=res.sisa;document.getElementById('stok-lk').textContent=standbyLK;}else{standbyPR=res.sisa;document.getElementById('stok-pr').textContent=standbyPR;}document.getElementById(namaId).value='';document.getElementById(gender==='LK'?'form-lk':'form-pr').classList.remove('open');showToast(`✅ Standby ${gender} berhasil! Sisa: ${res.sisa}`,'success');setTimeout(()=>window.location.href='history.html',1300);}
-    else showToast(res.msg||'Gagal.','error');
+    const res=await apiPost({action:'ambilStandby',data:{tanggal:isoToday(),nama_jamaah:nama,jenis_kelamin:g,bulan_keberangkatan:bln,barang,petugas:user.username}});
+    if(res.ok){
+      if(g==='LK'){standbyLK=res.sisa;document.getElementById('stok-lk').textContent=standbyLK;}
+      else{standbyPR=res.sisa;document.getElementById('stok-pr').textContent=standbyPR;}
+      document.getElementById(`rmb-info-${g.toLowerCase()}`).textContent=g==='LK'?standbyLK:standbyPR;
+      document.getElementById(`${g.toLowerCase()}-nama`).value='';
+      document.getElementById(`form-${g.toLowerCase()}`).classList.remove('open');
+      showToast(`✅ Standby ${g} berhasil! Sisa: ${res.sisa}`,'success');
+      setTimeout(()=>window.location.href='history.html',1300);
+    } else showToast(res.msg||'Gagal.','error');
   }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
 
+// Qty buttons rombongan
+function adjRmb(g, d){ const el=document.getElementById(`rmb-${g}`); el.value=Math.max(0,(parseInt(el.value)||0)+d); }
+
+// Ambil rombongan
 async function ambilRombongan(){
   const nama=document.getElementById('rmb-nama').value.trim();
   const lk=parseInt(document.getElementById('rmb-lk').value)||0;
@@ -213,62 +265,101 @@ async function ambilRombongan(){
   if(!nama){showToast('Nama rombongan wajib diisi!','error');return;}
   if(!bln){showToast('Pilih bulan keberangkatan!','error');return;}
   if(lk+pr===0){showToast('Masukkan jumlah koper minimal 1!','error');return;}
-  if(lk>standbyLK){showToast(`Koper Standby LK tidak cukup (sisa ${standbyLK})!`,'error');return;}
-  if(pr>standbyPR){showToast(`Koper Standby PR tidak cukup (sisa ${standbyPR})!`,'error');return;}
+  if(lk>standbyLK){showToast(`Standby LK tidak cukup (sisa ${standbyLK})!`,'error');return;}
+  if(pr>standbyPR){showToast(`Standby PR tidak cukup (sisa ${standbyPR})!`,'error');return;}
   showLoading(true);
   try{
     const res=await apiPost({action:'ambilRombongan',data:{tanggal:isoToday(),nama_rombongan:nama,jumlah_lk:lk,jumlah_pr:pr,bulan_keberangkatan:bln,keterangan:ket,petugas:user.username}});
-    if(res.ok){standbyLK=res.standby_lk;standbyPR=res.standby_pr;document.getElementById('stok-lk').textContent=standbyLK;document.getElementById('stok-pr').textContent=standbyPR;document.getElementById('rmb-nama').value='';document.getElementById('rmb-lk').value=0;document.getElementById('rmb-pr').value=0;document.getElementById('rmb-ket').value='';showToast(`✅ Rombongan ${nama} berhasil!`,'success');setTimeout(()=>window.location.href='history.html',1300);}
-    else showToast(res.msg||'Gagal.','error');
+    if(res.ok){
+      standbyLK=res.standby_lk; standbyPR=res.standby_pr;
+      document.getElementById('stok-lk').textContent=standbyLK;
+      document.getElementById('stok-pr').textContent=standbyPR;
+      document.getElementById('rmb-info-lk').textContent=standbyLK;
+      document.getElementById('rmb-info-pr').textContent=standbyPR;
+      document.getElementById('rmb-nama').value='';
+      document.getElementById('rmb-lk').value=0;
+      document.getElementById('rmb-pr').value=0;
+      document.getElementById('rmb-ket').value='';
+      showToast(`✅ Rombongan ${nama} berhasil dicatat!`,'success');
+      setTimeout(()=>window.location.href='history.html',1300);
+    } else showToast(res.msg||'Gagal.','error');
   }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
 
-const clItems=[
-  {key:'Koper',label:'Koper',sub:'1 buah'},
-  {key:'TasGendong',label:'Tas Gendong',sub:'1 buah'},
-  {key:'TasSlempang',label:'Tas Slempang',sub:'1 buah'},
-  {key:'TasSendal',label:'Tas Sendal',sub:'1 buah'},
-  {key:'IhromMukena',label:'Kain Ihrom / Mukena',sub:'Sesuai jenis kelamin',gender:true,lk:'Kain Ihrom',pr:'Mukena'},
-  {key:'Batik',label:'Batik LK / Batik PR',sub:'Sesuai jenis kelamin',gender:true,lk:'Batik LK',pr:'Batik PR'},
-  {key:'Tumbler',label:'Tumbler',sub:'1 buah'},
-  {key:'BotolSpray',label:'Botol Spray',sub:'1 buah'},
-  {key:'BukuPanduan',label:'Buku Panduan',sub:'1 buah'},
-  {key:'Topi',label:'Topi LK / Topi PR',sub:'Sesuai jenis kelamin',gender:true,lk:'Topi LK',pr:'Topi PR'},
-];
-const clMap={Koper:'Koper',TasGendong:'Tas Gendong',TasSlempang:'Tas Slempang',TasSendal:'Tas Sendal',Tumbler:'Tumbler',BotolSpray:'Botol Spray',BukuPanduan:'Buku Panduan'};
-let clChecked={};
-function getItemName(key,jk){if(clMap[key])return clMap[key];if(key==='IhromMukena')return jk==='LK'?'Kain Ihrom':'Mukena';if(key==='Batik')return jk==='LK'?'Batik LK':'Batik PR';if(key==='Topi')return jk==='LK'?'Topi LK':'Topi PR';return key;}
-function renderChecklist(){
-  const jk=document.getElementById('a-jk').value;
-  document.getElementById('cl-list').innerHTML=clItems.map(ci=>{const ok=!!clChecked[ci.key];const lbl=ci.gender?(jk==='LK'?ci.lk:ci.pr):ci.label;return`<div class="cl-item ${ok?'checked':''}" onclick="toggleCL('${ci.key}')"><input type="checkbox" ${ok?'checked':''} onclick="event.stopPropagation();toggleCL('${ci.key}')"/><div><div class="cl-label">${lbl}</div><div class="cl-sub">${ci.sub}</div></div></div>`;}).join('');
-  const n=Object.values(clChecked).filter(Boolean).length;
-  document.getElementById('cl-count').textContent=`${n} item dipilih${n===10?' — FULL SET ✓':''}`;
-}
-function toggleCL(k){clChecked[k]=!clChecked[k];renderChecklist();}
-function clearChecklist(){clChecked={};renderChecklist();}
+// ── SATUAN dengan input angka ─────────────────────────────────
+const ALL_ITEMS = {
+  LK: ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Batik LK','Tumbler','Botol Spray','Buku Panduan','Topi LK','Kalung ID Card','Case ID Card','Sampul Paspor','Tali Label Koper','Mukena','Batik PR','Topi PR'],
+  PR: ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Mukena','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi PR','Kalung ID Card','Case ID Card','Sampul Paspor','Tali Label Koper','Kain Ihrom','Batik LK','Topi LK'],
+};
+// Semua 17 item untuk satuan (bisa ambil item apapun)
+const SATUAN_ITEMS = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Mukena','Batik LK','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi LK','Topi PR','Kalung ID Card','Case ID Card','Sampul Paspor','Tali Label Koper'];
 
-async function simpanPengambilan(){
+function renderItemList(){
+  document.getElementById('item-list').innerHTML = SATUAN_ITEMS.map((item,i)=>`
+    <div class="item-input-row" id="item-row-${i}">
+      <div style="flex:1">
+        <div class="item-input-label">${item}</div>
+      </div>
+      <div class="item-qty-wrap">
+        <button class="qty-btn" onclick="adjItem(${i},-1)">−</button>
+        <input class="qty-num" type="number" id="item-qty-${i}" min="0" value="0"
+               oninput="updateItemRow(${i})"/>
+        <button class="qty-btn" onclick="adjItem(${i},1)">+</button>
+      </div>
+    </div>`).join('');
+  updateItemSummary();
+}
+
+function adjItem(i, d){
+  const el=document.getElementById(`item-qty-${i}`);
+  el.value=Math.max(0,(parseInt(el.value)||0)+d);
+  updateItemRow(i);
+}
+function updateItemRow(i){
+  const val=parseInt(document.getElementById(`item-qty-${i}`).value)||0;
+  document.getElementById(`item-row-${i}`).classList.toggle('item-row-active', val>0);
+  updateItemSummary();
+}
+function updateItemSummary(){
+  const total=SATUAN_ITEMS.reduce((s,_,i)=>s+(parseInt(document.getElementById(`item-qty-${i}`)?.value)||0),0);
+  const items=SATUAN_ITEMS.filter((_,i)=>(parseInt(document.getElementById(`item-qty-${i}`)?.value)||0)>0).length;
+  document.getElementById('item-summary').textContent=`${items} jenis · ${total} pcs total`;
+}
+function resetItems(){
+  SATUAN_ITEMS.forEach((_,i)=>{const el=document.getElementById(`item-qty-${i}`);if(el)el.value=0;updateItemRow(i);});
+}
+
+async function simpanSatuan(){
   const nama=document.getElementById('a-nama').value.trim();
   const jk=document.getElementById('a-jk').value;
   const bln=getBln('a-bln','a-thn');
+  const ket=document.getElementById('a-ket').value.trim();
   if(!nama){showToast('Nama jamaah wajib diisi!','error');return;}
   if(!bln){showToast('Pilih bulan keberangkatan!','error');return;}
-  const keys=Object.keys(clChecked).filter(k=>clChecked[k]);
-  if(!keys.length){showToast('Pilih minimal 1 barang!','error');return;}
-  const barang=keys.map(k=>getItemName(k,jk));
+  // Kumpulkan barang dengan qty > 0
+  const barang=[];
+  SATUAN_ITEMS.forEach((item,i)=>{
+    const qty=parseInt(document.getElementById(`item-qty-${i}`).value)||0;
+    for(let q=0;q<qty;q++) barang.push(item);
+  });
+  if(!barang.length){showToast('Masukkan jumlah minimal 1 item!','error');return;}
   showLoading(true);
   try{
-    const res=await apiPost({action:'simpanLog',data:{tanggal:isoToday(),nama_jamaah:nama,jenis_kelamin:jk,bulan_keberangkatan:bln,barang,petugas:user.username}});
-    if(res.ok){showToast('Pengambilan berhasil disimpan! ✅','success');clChecked={};document.getElementById('a-nama').value='';renderChecklist();setTimeout(()=>window.location.href='history.html',1200);}
-    else showToast('Gagal menyimpan.','error');
+    const res=await apiPost({action:'simpanLog',data:{tanggal:isoToday(),nama_jamaah:nama,jenis_kelamin:jk,bulan_keberangkatan:bln,barang,petugas:user.username,keterangan:ket}});
+    if(res.ok){
+      showToast('Pengambilan berhasil disimpan! ✅','success');
+      document.getElementById('a-nama').value='';
+      document.getElementById('a-ket').value='';
+      resetItems();
+      setTimeout(()=>window.location.href='history.html',1200);
+    } else showToast('Gagal menyimpan.','error');
   }catch(e){showToast('Gagal terhubung.','error');}
   showLoading(false);
 }
 
-initDropdowns();
-renderChecklist();
 renderItemsPreview();
+renderItemList();
 loadStandby();
 </script>
 </body>
