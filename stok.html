@@ -71,9 +71,9 @@ function renderMetrics(){
     {lbl:'Stok Aman',val:aman,sub:'item'},
     {lbl:'Perlu Restock',val:rst,sub:'item',top:'#EF9F27',color:'#854f0b'},
     {lbl:'Habis',val:habis,sub:'item',top:'#ccc',color:'#888'},
-  ].map(m=>`<div class="metric" style="border-top-color:${m.top||'var(--maroon)'}">
+  ].map(m=>`<div class="metric" style="border-top-color:${m.top||'var(--green)'}">
     <div class="lbl">${m.lbl}</div>
-    <div class="val" style="color:${m.color||'var(--maroon)'}">${m.val}</div>
+    <div class="val" style="color:${m.color||'var(--green)'}">${m.val}</div>
     <div class="sub">${m.sub}</div>
   </div>`).join('');
 }
@@ -141,18 +141,18 @@ function cetakPDFStok(){
 <style>
   body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
   .page{padding:28px 36px;max-width:740px;margin:0 auto}
-  .header{background:#7B1F2E;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
+  .header{background:#1B6B45;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
   .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
   .header p{font-size:11px;opacity:.85;margin:2px 0}
   .summary{display:flex;gap:12px;margin-bottom:18px}
-  .sum-box{flex:1;border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center;border-top:3px solid #7B1F2E}
-  .sum-box .val{font-size:22px;font-weight:700;color:#7B1F2E}
+  .sum-box{flex:1;border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center;border-top:3px solid #1B6B45}
+  .sum-box .val{font-size:22px;font-weight:700;color:#1B6B45}
   .sum-box .lbl{font-size:10px;color:#888;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
   .sum-box.warn{border-top-color:#EF9F27}.sum-box.warn .val{color:#854f0b}
   .sum-box.danger{border-top-color:#E24B4A}.sum-box.danger .val{color:#a32d2d}
   .sum-box.ok{border-top-color:#3b6d11}.sum-box.ok .val{color:#3b6d11}
   table{width:100%;border-collapse:collapse;font-size:12px}
-  th{background:#F9ECED;color:#7B1F2E;text-align:left;padding:8px 10px;font-weight:700;border:1px solid #E8C4C8}
+  th{background:#EAF5EE;color:#1B6B45;text-align:left;padding:8px 10px;font-weight:700;border:1px solid #A8D5B8}
   td{padding:7px 10px;border:1px solid #ddd;vertical-align:middle}
   tr:nth-child(even) td{background:#fafafa}
   .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700}
