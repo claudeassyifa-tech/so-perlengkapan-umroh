@@ -72,14 +72,21 @@ const NAV_PAGES = [
 function renderNavbar(activePage) {
   const user=getUser(); if(!user) return;
   const el=document.getElementById('navbar'); if(!el) return;
+  const active=NAV_PAGES.find(p=>p.href===activePage)||{icon:'🧳',label:'SO Perlengkapan'};
   const links=NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}">${p.icon} ${p.label}</a>`).join('');
   const mlinks=NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}" onclick="closeMobileNav()">${p.icon} ${p.label}</a>`).join('');
   el.innerHTML=`
     <div class="navbar-inner">
       <a href="dashboard.html" class="navbar-brand">
         <div class="brand-icon">🧳</div>
-        <div><div class="brand-name">SO Perlengkapan</div><div class="brand-sub">Assyifa Tour & Travel</div></div>
+        <div class="brand-text-desktop">
+          <div class="brand-name">SO Perlengkapan</div>
+          <div class="brand-sub">Assyifa Tour & Travel</div>
+        </div>
       </a>
+      <div class="navbar-page-title" id="navbar-page-title">
+        ${active.icon} ${active.label}
+      </div>
       <nav class="nav-links">${links}</nav>
       <div class="navbar-right">
         <button class="user-chip" onclick="doLogout()" title="Keluar">
