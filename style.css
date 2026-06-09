@@ -66,7 +66,7 @@ body {
 .navbar-inner {
   max-width: 960px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; height: 56px;
+  padding: 0 20px; height: 56px; position: relative;
 }
 .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand-icon {
@@ -103,6 +103,21 @@ body {
   font-size: 11px; font-weight: 800;
 }
 .uname { font-size: 12px; font-weight: 600; color: #fff; }
+
+/* Nama halaman aktif di tengah navbar — mobile only */
+.navbar-page-title {
+  display: none;
+  font-size: 15px; font-weight: 700; color: #fff;
+  position: absolute; left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .navbar-page-title { display: block; }
+  .brand-text-desktop { display: none; }
+  .nav-links { display: none; }
+  .hamburger { display: block; }
+  .uname { display: none; }
+}
 
 /* Mobile hamburger */
 .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; font-size: 22px; color: #fff; }
