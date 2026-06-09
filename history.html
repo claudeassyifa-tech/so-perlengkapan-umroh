@@ -78,7 +78,7 @@ function renderLog(q='',bln='',pet='',tipe=''){
         ${blnDisplay&&blnDisplay!=='-'?`<div class="log-s"><i class="ti ti-calendar" aria-hidden="true" style="font-size:11px"></i> ${blnDisplay}</div>`:''}
         <div class="log-s"><i class="ti ti-user-check" aria-hidden="true" style="font-size:11px"></i> ${l.petugas}</div>
         ${ketDisplay}
-        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-maroon">${items.length} item</span></div>
+        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-green">${items.length} item</span></div>
       </div>
     </div>`;
   }).join('');
@@ -112,7 +112,7 @@ function filterLog(q){
         ${blnDisplay&&blnDisplay!=='-'?`<div class="log-s"><i class="ti ti-calendar" style="font-size:11px"></i> ${blnDisplay}</div>`:''}
         <div class="log-s"><i class="ti ti-user-check" style="font-size:11px"></i> ${l.petugas}</div>
         ${ketDisplay}
-        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-maroon">${items.length} item</span></div>
+        <div class="log-pills">${items.map(i=>`<span class="pill">${i}</span>`).join('')}<span class="badge b-green">${items.length} item</span></div>
       </div>
     </div>`;
   }).join('');
@@ -126,7 +126,7 @@ function cetakPDFHistory(){
 <style>
   body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
   .page{padding:30px 36px;max-width:740px;margin:0 auto}
-  .header{background:#7B1F2E;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
+  .header{background:#1B6B45;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
   .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
   .header p{font-size:11px;opacity:.85;margin:2px 0}
   table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
@@ -134,7 +134,7 @@ function cetakPDFHistory(){
   td{padding:7px 9px;border:1px solid #ddd;vertical-align:top}
   tr:nth-child(even) td{background:#fafafa}
   .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
-  .badge-maroon{background:#F9ECED;color:#7B1F2E}
+  .badge-maroon{background:#EAF5EE;color:#1B6B45}
   .badge-blue{background:#e6f1fb;color:#185fa5}
   .badge-warn{background:#faeeda;color:#854f0b}
   .badge-green{background:#eaf3de;color:#3b6d11}
