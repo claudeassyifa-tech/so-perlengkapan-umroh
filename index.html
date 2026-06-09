@@ -8,12 +8,11 @@
 </head>
 <body>
 <div id="loading" style="display:none"><div class="spinner"></div><p>Memverifikasi...</p></div>
-
 <div class="login-wrap">
   <div style="width:100%;max-width:380px">
     <div class="login-card">
       <div class="login-logo">
-        <div class="logo-icon"><i class="ti ti-box-seam" aria-hidden="true"></i></div>
+        <div class="logo-icon">🧳</div>
         <h1>SO Perlengkapan</h1>
         <p>Assyifa Tour & Travel</p>
       </div>
@@ -32,20 +31,19 @@
                onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <div class="err-msg" id="login-err"></div>
-      <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doLogin()">
-        <i class="ti ti-login" aria-hidden="true"></i> Masuk
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:14px" onclick="doLogin()">
+        Masuk →
       </button>
     </div>
     <p style="text-align:center;font-size:11px;color:var(--tx3);margin-top:1.25rem">
-      © 2026 Assyifa Tour & Travel · SO Perlengkapan Umroh
+      © 2026 Assyifa Tour & Travel
     </p>
   </div>
 </div>
-
 <script src="config.js"></script>
 <script>
-if (getUser()) window.location.href = 'dashboard.html';
-async function doLogin() {
+if(getUser()) window.location.href='dashboard.html';
+async function doLogin(){
   const user=document.getElementById('login-user').value;
   const pin=document.getElementById('login-pin').value;
   const err=document.getElementById('login-err');
@@ -53,12 +51,12 @@ async function doLogin() {
   if(!user){err.style.display='block';err.textContent='Pilih nama pengguna dulu.';return;}
   if(!pin){err.style.display='block';err.textContent='Masukkan PIN.';return;}
   showLoading(true);
-  try {
+  try{
     const res=await apiGet({action:'login',user,pin});
     if(!res.ok){err.style.display='block';err.textContent='PIN salah. Coba lagi.';showLoading(false);return;}
     setUser({username:res.username,role:res.role});
     window.location.href='dashboard.html';
-  } catch(e){err.style.display='block';err.textContent='Gagal terhubung. Cek koneksi internet.';showLoading(false);}
+  }catch(e){err.style.display='block';err.textContent='Gagal terhubung. Cek koneksi.';showLoading(false);}
 }
 </script>
 </body>
