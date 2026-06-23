@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════
 //  SO Perlengkapan Umroh — Assyifa Tour & Travel
-//  Config v7 · Emerald Green
+//  Config v8
 // ═══════════════════════════════════════════
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxfwQxkYw9olV8LFfOqcV3bjzwbRF_NWOlGPUgV1hXxKrX4ibPut68LxHRzBA9e2-DqFQ/exec';
@@ -9,13 +9,13 @@ const BLN      = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','N
 const BLN_FULL = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const TAHUN_LIST = [2025,2026,2027,2028,2029,2030];
 
-const ITEMS_LK = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Batik LK','Tumbler','Botol Spray','Buku Panduan','Topi LK'];
-const ITEMS_PR = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Mukena','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi PR'];
+const SEMUA_BARANG = ['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Mukena',
+  'Batik LK','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi LK','Topi PR',
+  'Kalung ID Card','Case ID Card','Sampul Paspor','Tali Label Koper'];
 
 // ── API ───────────────────────────────────
 async function apiGet(params) {
-  const url = API_URL + '?' + new URLSearchParams(params);
-  const res = await fetch(url);
+  const res = await fetch(API_URL + '?' + new URLSearchParams(params));
   return res.json();
 }
 async function apiPost(body) {
@@ -24,57 +24,71 @@ async function apiPost(body) {
 }
 
 // ── Session ───────────────────────────────
-function getUser()   { const u = sessionStorage.getItem('so_user'); return u ? JSON.parse(u) : null; }
-function setUser(d)  { sessionStorage.setItem('so_user', JSON.stringify(d)); }
-function clearUser() { sessionStorage.removeItem('so_user'); }
-function requireLogin() { if (!getUser()) { window.location.href = 'index.html'; return false; } return true; }
+function getUser()    { const u=sessionStorage.getItem('so_user'); return u?JSON.parse(u):null; }
+function setUser(d)   { sessionStorage.setItem('so_user', JSON.stringify(d)); }
+function clearUser()  { sessionStorage.removeItem('so_user'); }
+function requireLogin() { if(!getUser()){window.location.href='index.html';return false;} return true; }
 
 // ── Helpers ───────────────────────────────
-function rp(n) { return 'Rp ' + Number(n).toLocaleString('id-ID'); }
-function initials(n) { return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
-function fmtDate(tgl) { const d=new Date(tgl); if(isNaN(d)) return tgl||'—'; return `${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`; }
-function isoToday() { return new Date().toISOString().split('T')[0]; }
-
-function normBulanJS(val) {
-  if (!val) return '';
-  const s = String(val).trim();
-  if (BLN_FULL.some(b => s.startsWith(b))) return s;
-  const d = new Date(s);
-  if (!isNaN(d)) return BLN_FULL[d.getMonth()] + ' ' + d.getFullYear();
-  return s;
+function initials(n) { return (n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function isoToday()  { return new Date().toISOString().split('T')[0]; }
+function fmtDate(tgl) {
+  if (!tgl) return '—';
+  const d = new Date(tgl);
+  if (isNaN(d)) return tgl;
+  return `${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
 }
-function normalizeLogs(data) {
-  return data.map(l => {
-    let tgl = l.tanggal || '';
-    if (tgl) { const d=new Date(tgl); if(!isNaN(d)){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');tgl=`${y}-${m}-${dd}`;} }
-    return { ...l, tanggal:tgl, bulan_keberangkatan: normBulanJS(l.bulan_keberangkatan) };
-  });
+function fmtDateLong(tgl) {
+  if (!tgl) return '—';
+  const d = new Date(tgl);
+  if (isNaN(d)) return tgl;
+  const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  return `${hari[d.getDay()]}, ${d.getDate()} ${BLN_FULL[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function showToast(msg, type='info') {
   let t = document.getElementById('toast');
   if (!t) { t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
   t.textContent=msg; t.className='toast show '+type;
-  clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2800);
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'), 2800);
 }
 function showLoading(v) { const el=document.getElementById('loading'); if(el) el.style.display=v?'flex':'none'; }
-function doLogout() { if(!confirm('Yakin ingin keluar?')) return; clearUser(); window.location.href='index.html'; }
+function doLogout()  { if(!confirm('Yakin keluar?')) return; clearUser(); window.location.href='index.html'; }
+
+// ── Petugas chip ──────────────────────────
+function petugasColor(nama) {
+  const n=(nama||'').toLowerCase();
+  if(n.includes('admin'))  return '#185FA5';
+  if(n.includes('azhar'))  return '#1B6B45';
+  if(n.includes('dedi'))   return '#7B3FA0';
+  return '#888';
+}
+function petugasChip(nama) {
+  const col = petugasColor(nama);
+  const short = (nama||'').split(' ')[0];
+  return `<span style="display:inline-flex;align-items:center;gap:4px;background:#f0f0f0;border-radius:99px;padding:2px 8px 2px 3px;font-size:11px">
+    <span style="width:16px;height:16px;border-radius:50%;background:${col};color:#fff;font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${initials(nama)}</span>
+    <span style="font-weight:600;color:#333">${short}</span>
+  </span>`;
+}
 
 // ── Navbar ────────────────────────────────
 const NAV_PAGES = [
   { href:'dashboard.html', icon:'🏠', label:'Dashboard' },
   { href:'stok.html',      icon:'📦', label:'Stok' },
-  { href:'ambil.html',     icon:'🛍️', label:'Ambil' },
-  { href:'restock.html',   icon:'📥', label:'Restock' },
+  { href:'keluar.html',    icon:'📤', label:'Keluar' },
+  { href:'masuk.html',     icon:'📥', label:'Masuk' },
+  { href:'cabang.html',    icon:'🏪', label:'Cabang' },
   { href:'history.html',   icon:'📋', label:'History' },
   { href:'laporan.html',   icon:'📄', label:'Laporan' },
 ];
+
 function renderNavbar(activePage) {
-  const user=getUser(); if(!user) return;
-  const el=document.getElementById('navbar'); if(!el) return;
-  const active=NAV_PAGES.find(p=>p.href===activePage)||{icon:'🧳',label:'SO Perlengkapan'};
-  const links=NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}">${p.icon} ${p.label}</a>`).join('');
-  const mlinks=NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}" onclick="closeMobileNav()">${p.icon} ${p.label}</a>`).join('');
+  const user = getUser(); if (!user) return;
+  const el = document.getElementById('navbar'); if (!el) return;
+  const active = NAV_PAGES.find(p=>p.href===activePage) || {icon:'📦', label:'SO Perlengkapan'};
+  const links = NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}">${p.icon} ${p.label}</a>`).join('');
+  const mlinks = NAV_PAGES.map(p=>`<a href="${p.href}" class="nav-link ${activePage===p.href?'active':''}" onclick="closeMobileNav()">${p.icon} ${p.label}</a>`).join('');
   el.innerHTML=`
     <div class="navbar-inner">
       <a href="dashboard.html" class="navbar-brand">
@@ -84,62 +98,48 @@ function renderNavbar(activePage) {
           <div class="brand-sub">Assyifa Tour & Travel</div>
         </div>
       </a>
-      <div class="navbar-page-title" id="navbar-page-title">
-        ${active.icon} ${active.label}
-      </div>
+      <div class="navbar-page-title">${active.icon} ${active.label}</div>
       <nav class="nav-links">${links}</nav>
       <div class="navbar-right">
         <button class="user-chip" onclick="doLogout()" title="Keluar">
-          <div class="avatar">${initials(user.username)}</div>
+          <div class="avatar" style="background:${petugasColor(user.username)}">${initials(user.username)}</div>
           <span class="uname">${user.username.split(' ')[0]}</span>
         </button>
-        <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
+        <button class="hamburger" onclick="toggleMobileNav()">☰</button>
       </div>
     </div>
     <div class="mobile-nav" id="mobile-nav">${mlinks}</div>`;
 }
 function toggleMobileNav() { document.getElementById('mobile-nav').classList.toggle('open'); }
-function closeMobileNav() { const mn=document.getElementById('mobile-nav'); if(mn) mn.classList.remove('open'); }
+function closeMobileNav()  { const mn=document.getElementById('mobile-nav'); if(mn) mn.classList.remove('open'); }
 
-// ── Badge helpers ─────────────────────────
-function tipeBadge(tipe) {
-  const map = {
-    'satuan':              '<span class="badge b-blue" style="margin-left:4px">Satuan</span>',
-    'standby_lk':         '<span class="badge b-blue" style="margin-left:4px">Standby LK</span>',
-    'standby_pr':         '<span class="badge b-danger" style="margin-left:4px">Standby PR</span>',
-    'standby_siapkan_lk': '<span class="badge b-warn" style="margin-left:4px">Siapkan LK</span>',
-    'standby_siapkan_pr': '<span class="badge b-warn" style="margin-left:4px">Siapkan PR</span>',
-    'rombongan':          '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
-    'rombongan_lk':       '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
-    'rombongan_pr':       '<span class="badge b-purple" style="margin-left:4px">Rombongan</span>',
-    'restock':            '<span class="badge b-green" style="margin-left:4px">Restock</span>',
-  };
-  return map[tipe] || '<span class="badge b-blue" style="margin-left:4px">Satuan</span>';
+// ── Item qty input builder ─────────────────
+function buildItemInputs(containerId, items) {
+  document.getElementById(containerId).innerHTML = items.map((item,i)=>`
+    <div class="item-input-row" id="irow-${i}">
+      <div style="flex:1"><div class="item-input-label">${item}</div></div>
+      <div class="item-qty-wrap">
+        <button class="qty-btn" onclick="adjQty(${i},-1)">−</button>
+        <input class="qty-num" type="number" id="iqty-${i}" min="0" value="0" oninput="updateQtyRow(${i})"/>
+        <button class="qty-btn" onclick="adjQty(${i},1)">+</button>
+      </div>
+    </div>`).join('');
 }
-function isSiapkan(tipe) { return tipe && tipe.startsWith('standby_siapkan'); }
-function isRestock(tipe) { return tipe === 'restock'; }
-function isRombongan(tipe) { return tipe && tipe.startsWith('rombongan'); }
-
-// ── Dropdown bulan+tahun ──────────────────
-function bulanSelect(idBln, idThn, label='Bulan Keberangkatan') {
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div class="fr" style="margin-bottom:0">
-      <label>${label}</label>
-      <select id="${idBln}">
-        <option value="">— Pilih bulan —</option>
-        ${BLN_FULL.map(b=>`<option value="${b}">${b}</option>`).join('')}
-      </select>
-    </div>
-    <div class="fr" style="margin-bottom:0">
-      <label>Tahun</label>
-      <select id="${idThn}">
-        ${TAHUN_LIST.map(y=>`<option value="${y}" ${y===2026?'selected':''}>${y}</option>`).join('')}
-      </select>
-    </div>
-  </div>`;
+function adjQty(i, d) {
+  const el=document.getElementById(`iqty-${i}`);
+  el.value=Math.max(0,(parseInt(el.value)||0)+d);
+  updateQtyRow(i);
 }
-function getBln(idBln, idThn) {
-  const b=document.getElementById(idBln)?.value;
-  const t=document.getElementById(idThn)?.value;
-  return b ? `${b} ${t}` : '';
+function updateQtyRow(i) {
+  const val=parseInt(document.getElementById(`iqty-${i}`)?.value)||0;
+  const row=document.getElementById(`irow-${i}`);
+  if(row) row.classList.toggle('item-row-active', val>0);
+  if(typeof updateSummary==='function') updateSummary();
+}
+function getSelectedItems(items) {
+  return items.map((nama,i)=>({nama,jumlah:parseInt(document.getElementById(`iqty-${i}`)?.value)||0}))
+    .filter(x=>x.jumlah>0);
+}
+function resetAllQty(items) {
+  items.forEach((_,i)=>{const el=document.getElementById(`iqty-${i}`);if(el)el.value=0;updateQtyRow(i);});
 }
