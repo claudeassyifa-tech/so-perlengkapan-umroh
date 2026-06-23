@@ -11,35 +11,21 @@
 <nav class="navbar" id="navbar"></nav>
 <div class="container">
   <div style="margin-bottom:16px">
-    <div style="font-size:18px;font-weight:800;color:var(--tx)" id="welcome-title">Selamat datang! 👋</div>
-    <div style="font-size:13px;color:var(--tx2);margin-top:3px" id="welcome-sub">Memuat data...</div>
+    <div style="font-size:18px;font-weight:800" id="welcome">Selamat datang! 👋</div>
+    <div style="font-size:13px;color:var(--tx2);margin-top:3px" id="welcome-sub"></div>
   </div>
-  <div class="metrics" id="metrics-bar"></div>
+  <div class="metrics" id="metrics"></div>
   <div class="alert-restock" id="alert-restock">
     <span style="font-size:17px;flex-shrink:0">⚠️</span>
-    <div><strong>Stok Perlu Restock:</strong> <span id="alert-list"></span></div>
-  </div>
-  <div class="section-label">Koper Standby — Siap di Depan</div>
-  <div class="standby-wrap">
-    <div class="standby-card lk">
-      <div class="sc-gender lk">👨 Laki-laki</div>
-      <div class="sc-title lk">Koper Standby LK</div>
-      <div class="sc-stok lk" id="dash-lk">—</div>
-      <div class="sc-sub">unit siap di depan</div>
-    </div>
-    <div class="standby-card pr">
-      <div class="sc-gender pr">👩 Perempuan</div>
-      <div class="sc-title pr">Koper Standby PR</div>
-      <div class="sc-stok pr" id="dash-pr">—</div>
-      <div class="sc-sub">unit siap di depan</div>
-    </div>
+    <div><strong>Perlu Restock:</strong> <span id="alert-list"></span></div>
   </div>
   <div class="section-label">Menu Utama</div>
   <div class="nav-grid">
-    <a href="stok.html" class="nav-card"><span class="nc-icon">📦</span><div class="nc-label">Stok Opname</div><div class="nc-sub">Lihat & update stok gudang</div></a>
-    <a href="ambil.html" class="nav-card"><span class="nc-icon">🛍️</span><div class="nc-label">Pengambilan</div><div class="nc-sub">Standby · Rombongan · Satuan</div></a>
-    <a href="restock.html" class="nav-card"><span class="nc-icon">📥</span><div class="nc-label">Restock</div><div class="nc-sub">Catat barang masuk gudang</div></a>
-    <a href="history.html" class="nav-card"><span class="nc-icon">📋</span><div class="nc-label">History Log</div><div class="nc-sub">Riwayat semua transaksi</div></a>
+    <a href="stok.html" class="nav-card"><span class="nc-icon">📦</span><div class="nc-label">Stok Gudang</div><div class="nc-sub">Lihat & update stok</div></a>
+    <a href="keluar.html" class="nav-card"><span class="nc-icon">📤</span><div class="nc-label">Barang Keluar</div><div class="nc-sub">Catat pengeluaran barang</div></a>
+    <a href="masuk.html" class="nav-card"><span class="nc-icon">📥</span><div class="nc-label">Barang Masuk</div><div class="nc-sub">Restock dari supplier</div></a>
+    <a href="cabang.html" class="nav-card"><span class="nc-icon">🏪</span><div class="nc-label">Gudang Cabang</div><div class="nc-sub">Stok di agen & mitra</div></a>
+    <a href="history.html" class="nav-card"><span class="nc-icon">📋</span><div class="nc-label">History</div><div class="nc-sub">Riwayat semua transaksi</div></a>
     <a href="laporan.html" class="nav-card"><span class="nc-icon">📄</span><div class="nc-label">Laporan PDF</div><div class="nc-sub">Cetak laporan periode</div></a>
   </div>
 </div>
@@ -47,27 +33,32 @@
 <script>
 if(!requireLogin()) throw '';
 renderNavbar('dashboard.html');
-const user=getUser();
-document.getElementById('welcome-sub').textContent=`Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
+const user = getUser();
+document.getElementById('welcome-sub').textContent = `Halo, ${user.username.split(' ')[0]}! Berikut ringkasan stok hari ini.`;
+
 async function load(){
   showLoading(true);
   try{
-    const[rs,rsd]=await Promise.all([apiGet({action:'getStok'}),apiGet({action:'getStandby'})]);
-    if(rs.ok){
-      const d=rs.data;
-      const aman=d.filter(b=>b.stok>b.limit).length,rst=d.filter(b=>b.stok>0&&b.stok<=b.limit).length,habis=d.filter(b=>b.stok==0).length;
-      document.getElementById('metrics-bar').innerHTML=[
-        {lbl:'Total Item',val:d.length,sub:'jenis barang',c:'var(--green)',bt:'var(--green)'},
-        {lbl:'Stok Aman',val:aman,sub:'item',c:'#1B6B45',bt:'#1B6B45'},
-        {lbl:'Perlu Restock',val:rst,sub:'item',c:'#854f0b',bt:'#EF9F27'},
-        {lbl:'Habis',val:habis,sub:'item',c:'#a32d2d',bt:'#E24B4A'},
-      ].map(m=>`<div class="metric" style="border-left-color:${m.bt}">
+    const res = await apiGet({action:'getStok'});
+    if(res.ok){
+      const d=res.data;
+      const aman=d.filter(b=>b.stok>b.limit).length;
+      const rst=d.filter(b=>b.stok>0&&b.stok<=b.limit).length;
+      const habis=d.filter(b=>b.stok==0).length;
+      document.getElementById('metrics').innerHTML=[
+        {lbl:'Total Item',val:d.length,sub:'jenis barang',c:'var(--green)',bl:'var(--green)'},
+        {lbl:'Stok Aman',val:aman,sub:'item',c:'var(--green)',bl:'var(--green)'},
+        {lbl:'Perlu Restock',val:rst,sub:'item',c:'#854f0b',bl:'#EF9F27'},
+        {lbl:'Habis',val:habis,sub:'item',c:'#a32d2d',bl:'#E24B4A'},
+      ].map(m=>`<div class="metric" style="border-left-color:${m.bl}">
         <div class="lbl">${m.lbl}</div><div class="val" style="color:${m.c}">${m.val}</div><div class="sub">${m.sub}</div>
       </div>`).join('');
       const ri=d.filter(b=>b.stok<=b.limit);
-      if(ri.length){document.getElementById('alert-restock').classList.add('show');document.getElementById('alert-list').textContent=ri.map(b=>`${b.nama} (sisa ${b.stok})`).join(', ');}
+      if(ri.length){
+        document.getElementById('alert-restock').classList.add('show');
+        document.getElementById('alert-list').textContent=ri.map(b=>`${b.nama} (sisa ${b.stok})`).join(', ');
+      }
     }
-    if(rsd.ok){document.getElementById('dash-lk').textContent=rsd.lk;document.getElementById('dash-pr').textContent=rsd.pr;}
   }catch(e){showToast('Gagal memuat data','error');}
   showLoading(false);
 }
