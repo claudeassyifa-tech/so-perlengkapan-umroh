@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Barang Masuk — SO Perlengkapan</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Menyimpan...</p></div>
+<nav class="navbar" id="navbar"></nav>
+<div class="container">
+  <div class="card card-accent">
+    <div class="card-title">📥 Catat Barang Masuk</div>
+    <div class="fr">
+      <label>Keterangan / Sumber Barang</label>
+      <input type="text" id="ket" placeholder="cth: Pembelian dari PT Sumber Makmur — batch Juni 2026"/>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">Tanggal: <strong id="tgl-display"></strong></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Barang yang Masuk</div>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Masukkan jumlah per item. Kosong atau 0 = tidak ada masuk.</p>
+    <div id="item-list"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+      <span id="summary" style="font-size:13px;color:var(--tx2)">0 item</span>
+      <button class="btn btn-sm btn-outline" onclick="resetAllQty(SEMUA_BARANG)">🔄 Reset</button>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" style="margin-top:12px" onclick="simpan()">
+      💾 Simpan Barang Masuk
+    </button>
+  </div>
+
+  <!-- History Restock -->
+  <div class="section-label">Riwayat Barang Masuk</div>
+  <div class="card" id="restock-history">
+    <div class="empty"><div class="empty-icon">📥</div>Memuat riwayat...</div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+if(!requireLogin()) throw '';
+renderNavbar('masuk.html');
+const user=getUser();
+document.getElementById('tgl-display').textContent=fmtDateLong(isoToday());
+
+function updateSummary(){
+  const sel=getSelectedItems(SEMUA_BARANG);
+  const total=sel.reduce((s,x)=>s+x.jumlah,0);
+  document.getElementById('summary').textContent=
+    sel.length?`${sel.length} jenis · ${total} pcs total`:'0 item dipilih';
+}
+buildItemInputs('item-list', SEMUA_BARANG);
+updateSummary();
+
+async function simpan(){
+  const ket=document.getElementById('ket').value.trim();
+  if(!ket){showToast('Keterangan sumber barang wajib diisi!','error');return;}
+  const items=getSelectedItems(SEMUA_BARANG);
+  if(!items.length){showToast('Masukkan jumlah minimal 1 barang!','error');return;}
+  showLoading(true);
+  try{
+    const res=await apiPost({action:'simpanRestock',data:{tanggal:isoToday(),keterangan:ket,items,petugas:user.username}});
+    if(res.ok){
+      showToast('✅ Barang masuk berhasil dicatat!','success');
+      document.getElementById('ket').value='';
+      resetAllQty(SEMUA_BARANG);
+      await loadHistory();
+    } else showToast(res.msg||'Gagal.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+
+async function loadHistory(){
+  try{
+    const res=await apiGet({action:'getRestock'});
+    if(!res.ok||!res.data.length){
+      document.getElementById('restock-history').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>';
+      return;
+    }
+    // Group by tanggal+petugas+keterangan
+    const groups={};
+    res.data.forEach(r=>{
+      const key=`${r.tanggal}||${r.petugas}||${r.keterangan}`;
+      if(!groups[key]) groups[key]={tanggal:r.tanggal,petugas:r.petugas,keterangan:r.keterangan,items:[]};
+      groups[key].items.push({nama:r.nama_barang,jumlah:r.jumlah});
+    });
+    document.getElementById('restock-history').innerHTML=Object.values(groups).map(g=>{
+      const d=new Date(g.tanggal);
+      return`<div class="log-row">
+        <div class="log-date"><div class="log-d">${isNaN(d)?'—':d.getDate()}</div><div class="log-m">${isNaN(d)?'—':BLN[d.getMonth()]}</div></div>
+        <div class="log-info">
+          <div class="log-n" style="font-size:14px;font-weight:700">Barang Masuk <span class="badge b-green" style="margin-left:4px">+${g.items.reduce((s,x)=>s+Number(x.jumlah),0)} pcs</span></div>
+          <div style="font-size:12px;color:var(--tx2);margin:3px 0 6px">${g.keterangan} · ${petugasChip(g.petugas)}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--bg2);border-radius:8px;padding:8px 10px;border:0.5px solid var(--border)">
+            ${g.items.map(it=>`<div style="font-size:11px;color:var(--tx2);display:flex;gap:4px;padding:2px 0">
+              <span style="font-weight:700;color:var(--tx)">+${it.jumlah}</span> ${it.nama}
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
+loadHistory();
+</script>
+</body>
+</html>
