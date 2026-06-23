@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gudang Cabang — SO Perlengkapan</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.cbg-card{background:var(--card);border:0.5px solid var(--border);border-left:4px solid var(--green);border-radius:var(--rl);padding:1rem 1.125rem;margin-bottom:10px;box-shadow:var(--shadow)}
+.cbg-name{font-size:15px;font-weight:700}
+.cbg-ket{font-size:12px;color:var(--tx2);margin-top:2px}
+.cbg-stok-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--bg2);border-radius:8px;padding:8px 10px;border:0.5px solid var(--border);margin:10px 0}
+.cbg-stok-item{font-size:11px;color:var(--tx2);display:flex;gap:4px;padding:2px 0}
+.cbg-stok-val{font-weight:700;color:var(--tx)}
+.cbg-actions{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Memproses...</p></div>
+<nav class="navbar" id="navbar"></nav>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('stok')" id="tab-stok">🏪 Stok Cabang</button>
+  <button class="tab-btn" onclick="switchTab('kirim')" id="tab-kirim">📤 Kirim ke Cabang</button>
+  <button class="tab-btn" onclick="switchTab('kembali')" id="tab-kembali">🔄 Kembali ke Gudang</button>
+</div>
+
+<div class="container">
+
+  <!-- TAB STOK CABANG -->
+  <div id="sec-stok">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div style="font-size:15px;font-weight:700">🏪 Gudang Cabang / Agen / Mitra</div>
+        <div style="font-size:12px;color:var(--tx2)">Stok barang yang ada di luar gudang utama</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openTambah()">+ Tambah Cabang</button>
+    </div>
+    <div class="card" style="margin-bottom:14px;padding:.875rem 1.125rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center">
+        <div><div style="font-size:24px;font-weight:800;color:var(--green)" id="tot-cabang">—</div><div style="font-size:11px;color:var(--tx2);text-transform:uppercase;font-weight:600">Jumlah Cabang</div></div>
+        <div style="border-left:0.5px solid var(--border)"><div style="font-size:24px;font-weight:800;color:var(--green)" id="tot-barang">—</div><div style="font-size:11px;color:var(--tx2);text-transform:uppercase;font-weight:600">Total Barang di Cabang</div></div>
+      </div>
+    </div>
+    <div id="cbg-list"><div class="empty"><div class="empty-icon">🏪</div>Belum ada cabang.</div></div>
+  </div>
+
+  <!-- TAB KIRIM KE CABANG -->
+  <div id="sec-kirim" style="display:none">
+    <div class="card card-accent">
+      <div class="card-title">📤 Kirim Barang ke Cabang</div>
+      <div class="fr">
+        <label>Pilih Cabang Tujuan</label>
+        <select id="kirim-cbg"><option value="">— Pilih cabang —</option></select>
+      </div>
+      <div class="fr">
+        <label>Keterangan</label>
+        <input type="text" id="kirim-ket" placeholder="cth: Untuk stock acara manasik Bandung"/>
+      </div>
+      <div style="font-size:11px;color:var(--tx2)">Tanggal: <strong id="kirim-tgl"></strong></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Pilih Barang yang Dikirim</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Masukkan jumlah per item.</p>
+      <div id="kirim-items"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+        <span id="kirim-summary" style="font-size:13px;color:var(--tx2)">0 item</span>
+        <button class="btn btn-sm btn-outline" onclick="resetAllQty(SEMUA_BARANG)">🔄 Reset</button>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:12px" onclick="simpanKirim()">
+        📤 Konfirmasi Kirim ke Cabang
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB KEMBALI KE GUDANG -->
+  <div id="sec-kembali" style="display:none">
+    <div class="card card-accent">
+      <div class="card-title">🔄 Kembalikan Barang ke Gudang</div>
+      <div class="fr">
+        <label>Pilih Cabang Asal</label>
+        <select id="kembali-cbg" onchange="renderKembaliItems()"><option value="">— Pilih cabang —</option></select>
+      </div>
+      <div class="fr">
+        <label>Keterangan</label>
+        <input type="text" id="kembali-ket" placeholder="cth: Sisa barang tidak terpakai"/>
+      </div>
+      <div style="font-size:11px;color:var(--tx2)">Tanggal: <strong id="kembali-tgl"></strong></div>
+    </div>
+    <div class="card" id="kembali-card" style="display:none">
+      <div class="card-title">📋 Barang yang Dikembalikan</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Masukkan jumlah yang dikembalikan.</p>
+      <div id="kembali-items"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+        <span id="kembali-summary" style="font-size:13px;color:var(--tx2)">0 item</span>
+        <button class="btn btn-sm btn-outline" onclick="resetKembaliItems()">🔄 Reset</button>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:12px" onclick="simpanKembali()">
+        🔄 Konfirmasi Kembalikan ke Gudang
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Tambah Cabang -->
+<div class="modal-overlay" id="modal-tambah">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>🏪 Tambah Cabang / Agen / Mitra</h3>
+    <div class="fr"><label>Nama Cabang</label><input type="text" id="cbg-nama" placeholder="cth: Ust Haikal / Bu Hj Reni / Cabang Bandung"/></div>
+    <div class="fr"><label>Keterangan (opsional)</label><input type="text" id="cbg-ket" placeholder="cth: Jl. Merdeka No. 12, Bandung"/></div>
+    <div class="modal-actions">
+      <button class="btn" style="flex:1" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" style="flex:1" onclick="simpanTambah()">✅ Tambah</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+if(!requireLogin()) throw '';
+renderNavbar('cabang.html');
+const user=getUser();
+let cabangData=[], kembaliItems=[];
+
+document.getElementById('kirim-tgl').textContent=fmtDateLong(isoToday());
+document.getElementById('kembali-tgl').textContent=fmtDateLong(isoToday());
+
+// Tab switching
+function switchTab(name){
+  ['stok','kirim','kembali'].forEach(t=>{
+    document.getElementById(`sec-${t}`).style.display=t===name?'block':'none';
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===name);
+  });
+  if(name==='stok') loadCabang();
+}
+
+// Render cabang list
+function renderCabang(){
+  document.getElementById('tot-cabang').textContent=cabangData.length;
+  document.getElementById('tot-barang').textContent=cabangData.reduce((s,c)=>s+c.total,0)+' pcs';
+  if(!cabangData.length){
+    document.getElementById('cbg-list').innerHTML='<div class="empty"><div class="empty-icon">🏪</div>Belum ada cabang. Klik "+ Tambah Cabang".</div>';
+    return;
+  }
+  document.getElementById('cbg-list').innerHTML=cabangData.map(c=>{
+    const stokEntries=Object.entries(c.stok||{}).filter(([,v])=>v>0);
+    return`<div class="cbg-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="cbg-name">🏪 ${c.nama}</div>${c.keterangan?`<div class="cbg-ket">${c.keterangan}</div>`:''}</div>
+        <div style="text-align:right">
+          <div style="font-size:22px;font-weight:800;color:var(--green)">${c.total}</div>
+          <div style="font-size:11px;color:var(--tx2)">pcs total</div>
+        </div>
+      </div>
+      ${stokEntries.length?`<div class="cbg-stok-grid">
+        ${stokEntries.map(([n,v])=>`<div class="cbg-stok-item"><span class="cbg-stok-val">×${v}</span> ${n}</div>`).join('')}
+      </div>`:'<div style="font-size:12px;color:var(--tx3);margin:8px 0">Belum ada stok.</div>'}
+      <div class="cbg-actions">
+        <button class="btn btn-sm btn-outline" onclick="switchTab('kirim');setTimeout(()=>setKirimCbg('${c.id}'),100)">📤 Kirim Barang</button>
+        <button class="btn btn-sm btn-outline" onclick="switchTab('kembali');setTimeout(()=>setKembaliCbg('${c.id}'),100)">🔄 Kembalikan</button>
+        ${user.role==='admin'?`<button class="btn btn-sm" style="color:#a32d2d;border-color:#f4b8b8" onclick="hapus('${c.id}','${c.nama}')">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Update select options
+  const opts=cabangData.map(c=>`<option value="${c.id}">${c.nama}</option>`).join('');
+  document.getElementById('kirim-cbg').innerHTML=`<option value="">— Pilih cabang —</option>${opts}`;
+  document.getElementById('kembali-cbg').innerHTML=`<option value="">— Pilih cabang —</option>${opts}`;
+}
+
+// Build kirim items
+function updateKirimSummary(){
+  const sel=getSelectedItems(SEMUA_BARANG);
+  const total=sel.reduce((s,x)=>s+x.jumlah,0);
+  document.getElementById('kirim-summary').textContent=sel.length?`${sel.length} jenis · ${total} pcs`:'0 item';
+}
+// Override updateSummary untuk kirim tab
+function updateSummary(){ updateKirimSummary(); }
+buildItemInputs('kirim-items', SEMUA_BARANG);
+
+function setKirimCbg(id){ document.getElementById('kirim-cbg').value=id; }
+function setKembaliCbg(id){ document.getElementById('kembali-cbg').value=id; renderKembaliItems(); }
+
+// Kembali items — berdasarkan stok cabang
+function renderKembaliItems(){
+  const id=document.getElementById('kembali-cbg').value;
+  const cbg=cabangData.find(c=>c.id===id);
+  document.getElementById('kembali-card').style.display=id?'block':'none';
+  if(!cbg) return;
+  const stokEntries=Object.entries(cbg.stok||{}).filter(([,v])=>v>0);
+  if(!stokEntries.length){
+    document.getElementById('kembali-items').innerHTML='<div class="empty">Tidak ada barang di cabang ini.</div>';
+    return;
+  }
+  kembaliItems=stokEntries.map(([nama])=>nama);
+  document.getElementById('kembali-items').innerHTML=stokEntries.map(([nama,maxV],i)=>`
+    <div class="item-input-row" id="krow-${i}">
+      <div style="flex:1">
+        <div class="item-input-label">${nama}</div>
+        <div style="font-size:11px;color:var(--tx2)">Ada di cabang: ${maxV} pcs</div>
+      </div>
+      <div class="item-qty-wrap">
+        <button class="qty-btn" onclick="adjKembali(${i},-1,${maxV})">−</button>
+        <input class="qty-num" type="number" id="kqty-${i}" min="0" max="${maxV}" value="0" oninput="updateKembaliRow(${i})"/>
+        <button class="qty-btn" onclick="adjKembali(${i},1,${maxV})">+</button>
+      </div>
+    </div>`).join('');
+  updateKembaliSummary();
+}
+function adjKembali(i,d,max){const el=document.getElementById(`kqty-${i}`);el.value=Math.max(0,Math.min(max,(parseInt(el.value)||0)+d));updateKembaliRow(i);}
+function updateKembaliRow(i){const v=parseInt(document.getElementById(`kqty-${i}`)?.value)||0;const r=document.getElementById(`krow-${i}`);if(r)r.classList.toggle('item-row-active',v>0);updateKembaliSummary();}
+function updateKembaliSummary(){
+  const sel=kembaliItems.map((n,i)=>({nama:n,jumlah:parseInt(document.getElementById(`kqty-${i}`)?.value)||0})).filter(x=>x.jumlah>0);
+  const total=sel.reduce((s,x)=>s+x.jumlah,0);
+  document.getElementById('kembali-summary').textContent=sel.length?`${sel.length} jenis · ${total} pcs`:'0 item';
+}
+function resetKembaliItems(){kembaliItems.forEach((_,i)=>{const el=document.getElementById(`kqty-${i}`);if(el)el.value=0;updateKembaliRow(i);});}
+
+// Modal tambah
+function openTambah(){document.getElementById('cbg-nama').value='';document.getElementById('cbg-ket').value='';document.getElementById('modal-tambah').classList.add('open');}
+function closeModal(){document.getElementById('modal-tambah').classList.remove('open');}
+async function simpanTambah(){
+  const nama=document.getElementById('cbg-nama').value.trim();
+  if(!nama){showToast('Nama cabang wajib!','error');return;}
+  showLoading(true);
+  try{const res=await apiPost({action:'tambahCabang',data:{nama,keterangan:document.getElementById('cbg-ket').value.trim()}});
+    if(res.ok){showToast('✅ Cabang ditambahkan!','success');closeModal();await loadCabang();}
+    else showToast(res.msg||'Gagal.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+
+// Kirim ke cabang
+async function simpanKirim(){
+  const id=document.getElementById('kirim-cbg').value;
+  const cbg=cabangData.find(c=>c.id===id);
+  const ket=document.getElementById('kirim-ket').value.trim();
+  if(!id){showToast('Pilih cabang tujuan!','error');return;}
+  if(!ket){showToast('Keterangan wajib diisi!','error');return;}
+  const items=getSelectedItems(SEMUA_BARANG);
+  if(!items.length){showToast('Pilih minimal 1 barang!','error');return;}
+  showLoading(true);
+  try{
+    const res=await apiPost({action:'kirimKeCabang',data:{tanggal:isoToday(),id_cabang:id,nama_cabang:cbg.nama,items,petugas:user.username,keterangan:ket}});
+    if(res.ok){showToast(`✅ Barang berhasil dikirim ke ${cbg.nama}!`,'success');document.getElementById('kirim-ket').value='';resetAllQty(SEMUA_BARANG);await loadCabang();switchTab('stok');}
+    else showToast(res.msg||'Gagal.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+
+// Kembali ke gudang
+async function simpanKembali(){
+  const id=document.getElementById('kembali-cbg').value;
+  const cbg=cabangData.find(c=>c.id===id);
+  const ket=document.getElementById('kembali-ket').value.trim();
+  const items=kembaliItems.map((n,i)=>({nama:n,jumlah:parseInt(document.getElementById(`kqty-${i}`)?.value)||0})).filter(x=>x.jumlah>0);
+  if(!id){showToast('Pilih cabang!','error');return;}
+  if(!items.length){showToast('Masukkan jumlah yang dikembalikan!','error');return;}
+  showLoading(true);
+  try{
+    const res=await apiPost({action:'kembalikanCabang',data:{tanggal:isoToday(),id_cabang:id,nama_cabang:cbg.nama,items,petugas:user.username,keterangan:ket}});
+    if(res.ok){showToast(`✅ Barang berhasil dikembalikan dari ${cbg.nama}!`,'success');document.getElementById('kembali-ket').value='';await loadCabang();switchTab('stok');}
+    else showToast(res.msg||'Gagal.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+
+async function hapus(id,nama){
+  if(!confirm(`Hapus cabang ${nama}?`))return;
+  showLoading(true);
+  try{const res=await apiPost({action:'hapusCabang',id});if(res.ok){showToast(`Cabang ${nama} dihapus.`,'success');await loadCabang();}else showToast(res.msg||'Gagal.','error');}
+  catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+
+async function loadCabang(){
+  try{const res=await apiGet({action:'getCabang'});if(res.ok){cabangData=res.data;renderCabang();}}
+  catch(e){showToast('Gagal memuat.','error');}
+}
+loadCabang();
+</script>
+</body>
+</html>
