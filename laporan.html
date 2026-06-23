@@ -22,7 +22,18 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
         <div class="fr"><label>Bulan</label>
           <select id="mgg-bln">
-            ${['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((b,i)=>`<option value="${i}" ${i===new Date().getMonth()?'selected':''}>${b}</option>`).join('')}
+            <option value="0">Januari</option>
+            <option value="1">Februari</option>
+            <option value="2">Maret</option>
+            <option value="3">April</option>
+            <option value="4">Mei</option>
+            <option value="5">Juni</option>
+            <option value="6">Juli</option>
+            <option value="7">Agustus</option>
+            <option value="8">September</option>
+            <option value="9">Oktober</option>
+            <option value="10">November</option>
+            <option value="11">Desember</option>
           </select>
         </div>
         <div class="fr"><label>Tahun</label>
@@ -209,6 +220,8 @@ async function loadAll(){
   showLoading(false);
 }
 loadAll();
+// Set default bulan ke bulan ini
+document.getElementById('mgg-bln').value = new Date().getMonth();
 </script>
 </body>
 </html>
