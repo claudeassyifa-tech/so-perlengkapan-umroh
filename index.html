@@ -22,7 +22,7 @@
           <option value="">— Pilih akun —</option>
           <option>Admin</option>
           <option>Azhar Dzaky Muhamad HM</option>
-          <option>Dedi</option>
+          <option>Mang Dedi</option>
         </select>
       </div>
       <div class="fr">
@@ -31,13 +31,9 @@
                onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <div class="err-msg" id="login-err"></div>
-      <button class="btn btn-primary btn-block btn-lg" style="margin-top:14px" onclick="doLogin()">
-        Masuk →
-      </button>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:14px" onclick="doLogin()">Masuk →</button>
     </div>
-    <p style="text-align:center;font-size:11px;color:var(--tx3);margin-top:1.25rem">
-      © 2026 Assyifa Tour & Travel
-    </p>
+    <p style="text-align:center;font-size:11px;color:var(--tx3);margin-top:1.25rem">© 2026 Assyifa Tour & Travel</p>
   </div>
 </div>
 <script src="config.js"></script>
@@ -56,7 +52,7 @@ async function doLogin(){
     if(!res.ok){err.style.display='block';err.textContent='PIN salah. Coba lagi.';showLoading(false);return;}
     setUser({username:res.username,role:res.role});
     window.location.href='dashboard.html';
-  }catch(e){err.style.display='block';err.textContent='Gagal terhubung. Cek koneksi.';showLoading(false);}
+  }catch(e){err.style.display='block';err.textContent='Gagal terhubung.';showLoading(false);}
 }
 </script>
 </body>
