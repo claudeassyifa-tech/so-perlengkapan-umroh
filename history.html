@@ -3,292 +3,163 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>History Log — SO Perlengkapan</title>
+<title>History — SO Perlengkapan</title>
 <link rel="stylesheet" href="style.css"/>
 <style>
 .log-meta-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.meta-item{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:3px}
-.petugas-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:99px;padding:3px 9px 3px 4px}
-.petugas-avatar{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0}
-.petugas-name{font-size:11px;font-weight:600;color:var(--tx)}
-.sep{color:var(--border2);font-size:11px}
 .items-box{background:var(--bg2);border-radius:8px;padding:8px 10px;border:0.5px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:2px}
 .item-chip{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px;padding:2px 0}
 .item-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
 .qty{font-weight:700;color:var(--tx);font-size:12px;min-width:20px}
-.gender-boxes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:2px}
-.gender-box{border-radius:8px;padding:8px 10px}
-.gender-box.lk{background:#EEF4FB;border:0.5px solid #B5D0EE}
-.gender-box.pr{background:#FEF0F4;border:0.5px solid #F4B8C8}
-.gender-box-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.gender-box.lk .gender-box-title{color:#1a5fa8}
-.gender-box.pr .gender-box-title{color:#c0392b}
-.item-line{font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:4px;padding:1px 0}
 .total-chip{display:inline-flex;align-items:center;gap:4px;background:var(--green-soft);color:var(--green);font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;margin-top:7px}
-.standby-box-lk{background:#EEF4FB;border:0.5px solid #B5D0EE;border-radius:8px;padding:8px 10px}
-.standby-box-pr{background:#FEF0F4;border:0.5px solid #F4B8C8;border-radius:8px;padding:8px 10px}
 </style>
 </head>
 <body>
-<div id="loading" style="display:none"><div class="spinner"></div><p>Memuat riwayat...</p></div>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Memuat...</p></div>
 <nav class="navbar" id="navbar"></nav>
-
 <div class="container">
   <div class="toolbar">
-    <input type="text" placeholder="🔍 Cari nama jamaah / rombongan..." oninput="filterLog(this.value)"/>
-    <select id="log-bln" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
-      <option value="">Semua Bulan</option>
+    <input type="text" placeholder="🔍 Cari keterangan..." oninput="filterLog(this.value)" style="flex:1"/>
+    <select id="filt-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
+      <option value="">Semua Tipe</option>
+      <option value="keluar">Barang Keluar</option>
+      <option value="masuk">Barang Masuk</option>
+      <option value="kirim">Kirim ke Cabang</option>
+      <option value="kembali">Kembali dari Cabang</option>
     </select>
-    <select id="log-pet" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
+    <select id="filt-pet" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:100px">
       <option value="">Semua Petugas</option>
       <option>Admin</option>
       <option>Azhar Dzaky Muhamad HM</option>
-      <option>Dedi</option>
-    </select>
-    <select id="log-tipe" onchange="filterLog(document.querySelector('.toolbar input').value)" style="min-width:110px">
-      <option value="">Semua Tipe</option>
-      <option value="satuan">Satuan</option>
-      <option value="standby_lk">Standby LK</option>
-      <option value="standby_pr">Standby PR</option>
-      <option value="standby_siapkan_lk">Siapkan LK</option>
-      <option value="standby_siapkan_pr">Siapkan PR</option>
-      <option value="rombongan">Rombongan</option>
+      <option>Mang Dedi</option>
     </select>
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div id="log-summary" style="font-size:13px;color:var(--tx2)"></div>
-    <button class="btn btn-outline btn-sm" onclick="cetakPDFHistory()">
-      <i class="ti ti-printer" aria-hidden="true"></i> Cetak PDF
-    </button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div id="summary" style="font-size:13px;color:var(--tx2)"></div>
+    <button class="btn btn-outline btn-sm" onclick="cetakPDF()">🖨️ Cetak PDF</button>
   </div>
   <div class="card" id="log-list"><div class="empty"><div class="empty-icon">📋</div>Memuat riwayat...</div></div>
 </div>
-
 <script src="config.js"></script>
 <script>
 if(!requireLogin()) throw '';
 renderNavbar('history.html');
 const user=getUser();
-let logData=[], filteredData=[];
+let allData=[], filtered=[];
 
-// Warna avatar petugas
-function petugasColor(nama){
-  const n=(nama||'').toLowerCase();
-  if(n.includes('admin')) return '#185FA5';
-  if(n.includes('azhar')) return '#1B6B45';
-  if(n.includes('dedi')) return '#534AB7';
-  return '#888780';
-}
-function petugasChip(nama){
-  const inits=initials(nama||'?');
-  const col=petugasColor(nama);
-  const short=(nama||'').split(' ')[0];
-  return `<div class="petugas-chip">
-    <div class="petugas-avatar" style="background:${col}">${inits}</div>
-    <span class="petugas-name">${short}</span>
-  </div>`;
-}
+function itemsToQty(items){ const m={}; (items||[]).forEach(x=>{m[x.nama]=(m[x.nama]||0)+Number(x.jumlah);}); return m; }
 
-// Konversi array barang jadi map qty: {Koper:3, Batik LK:1, ...}
-function itemsToQty(items){
-  const map={};
-  (items||[]).forEach(i=>{ map[i]=(map[i]||0)+1; });
-  return map;
-}
-
-// Render items box (satuan/standby)
-function renderItemsBox(items, cls=''){
+function renderItemsBox(items){
   const map=itemsToQty(items);
-  const entries=Object.entries(map);
-  if(!entries.length) return '';
-  return `<div class="items-box ${cls}">
-    ${entries.map(([n,q])=>`<div class="item-chip"><span class="item-dot"></span><span class="qty">×${q}</span> ${n}</div>`).join('')}
-  </div>`;
+  return`<div class="items-box">${Object.entries(map).map(([n,q])=>`
+    <div class="item-chip"><span class="item-dot"></span><span class="qty">×${q}</span> ${n}</div>`).join('')}</div>`;
 }
 
-// Render 2 kotak LK+PR untuk rombongan
-function renderGenderBoxes(items){
-  const lkItems=['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Kain Ihrom','Batik LK','Tumbler','Botol Spray','Buku Panduan','Topi LK'];
-  const prItems=['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Mukena','Batik PR','Tumbler','Botol Spray','Buku Panduan','Topi PR'];
-  const map=itemsToQty(items);
-  const lkEntries=Object.entries(map).filter(([n])=>lkItems.includes(n)&&!prItems.includes(n)||n==='Koper'||n==='Tas Gendong'||n==='Tas Slempang'||n==='Tas Sendal'||n==='Tumbler'||n==='Botol Spray'||n==='Buku Panduan');
-  const prEntries=Object.entries(map).filter(([n])=>prItems.includes(n));
-  // Pisah LK vs PR berdasarkan nama spesifik
-  const lkOnly=Object.entries(map).filter(([n])=>['Kain Ihrom','Batik LK','Topi LK'].includes(n));
-  const prOnly=Object.entries(map).filter(([n])=>['Mukena','Batik PR','Topi PR'].includes(n));
-  const shared=Object.entries(map).filter(([n])=>['Koper','Tas Gendong','Tas Slempang','Tas Sendal','Tumbler','Botol Spray','Buku Panduan','Kalung ID Card','Case ID Card','Sampul Paspor','Tali Label Koper'].includes(n));
-  const hasLK=lkOnly.length>0;
-  const hasPR=prOnly.length>0;
-  if(hasLK&&hasPR){
-    return `<div class="gender-boxes">
-      <div class="gender-box lk">
-        <div class="gender-box-title">👨 Laki-laki</div>
-        ${shared.map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-        ${lkOnly.map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-      </div>
-      <div class="gender-box pr">
-        <div class="gender-box-title">👩 Perempuan</div>
-        ${shared.map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-        ${prOnly.map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-      </div>
-    </div>`;
-  }
-  return renderItemsBox(items);
+function tipeBadge(tipe){
+  const m={'keluar':'<span class="badge b-danger" style="margin-left:4px">📤 Keluar</span>',
+    'masuk':'<span class="badge b-green" style="margin-left:4px">📥 Masuk</span>',
+    'kirim':'<span class="badge b-warn" style="margin-left:4px">🏪 Ke Cabang</span>',
+    'kembali':'<span class="badge b-blue" style="margin-left:4px">🔄 Dari Cabang</span>'};
+  return m[tipe]||`<span class="badge b-info" style="margin-left:4px">${tipe}</span>`;
 }
 
-function totalPcs(items){ return (items||[]).length; }
-
-function updateFilter(){
-  const blns=[...new Set(logData.map(l=>l.bulan_keberangkatan||'').filter(b=>b&&b!=='-'))];
-  const sel=document.getElementById('log-bln'),cur=sel.value;
-  sel.innerHTML=`<option value="">Semua Bulan</option>`+blns.map(b=>`<option ${b===cur?'selected':''} value="${b}">${b}</option>`).join('');
-}
-
-function filterLog(q){
-  const bln=document.getElementById('log-bln').value;
-  const pet=document.getElementById('log-pet').value;
-  const tipe=document.getElementById('log-tipe').value;
-  filteredData=logData.filter(l=>{
-    const nama=(l.nama_jamaah||'').toLowerCase();
-    const tipeL=l.tipe||'';
-    const tipeMatch=!tipe||tipeL===tipe||(tipe==='rombongan'&&tipeL.startsWith('rombongan'));
-    return nama.includes(q.toLowerCase())&&(!bln||(l.bulan_keberangkatan||'')===bln)&&(!pet||l.petugas===pet)&&tipeMatch;
-  });
-  document.getElementById('log-summary').textContent=filteredData.length?`Menampilkan ${filteredData.length} transaksi`:'';
-  if(!filteredData.length){document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>';return;}
-
-  document.getElementById('log-list').innerHTML=filteredData.map(l=>{
+function renderLog(){
+  if(!filtered.length){document.getElementById('log-list').innerHTML='<div class="empty"><div class="empty-icon">📭</div>Belum ada riwayat.</div>';return;}
+  document.getElementById('log-list').innerHTML=filtered.map(l=>{
     const d=new Date(l.tanggal||'');
     const day=isNaN(d)?'—':d.getDate(), mon=isNaN(d)?'—':BLN[d.getMonth()];
-    const items=Array.isArray(l.barang)?l.barang:[];
-    const total=totalPcs(items);
-    const siapkan=isSiapkan(l.tipe);
-    const rmb=isRombongan(l.tipe);
-    const tipe=l.tipe||'satuan';
-    const isStandbyLK=tipe==='standby_lk';
-    const isStandbyPR=tipe==='standby_pr';
-
-    const namaDisplay=siapkan
-      ?`<span style="font-weight:600;color:var(--tx2)">Persiapan Koper Standby</span>`
-      :(l.nama_jamaah||'-');
-
-    const blnDisplay=(l.bulan_keberangkatan&&l.bulan_keberangkatan!=='-')
-      ?`<div class="meta-item"><i class="ti ti-calendar" aria-hidden="true" style="font-size:11px"></i> ${l.bulan_keberangkatan}</div><span class="sep">·</span>`
-      :'';
-
-    const siapkanMeta=siapkan
-      ?`<div class="meta-item"><i class="ti ti-building-warehouse" aria-hidden="true" style="font-size:11px"></i> ${l.keterangan||'disiapkan ke depan'}</div><span class="sep">·</span>`
-      :'';
-
-    // Render barang sesuai tipe
-    let barangHtml='';
-    if(rmb){
-      barangHtml=renderGenderBoxes(items);
-    } else if(isStandbyLK){
-      barangHtml=`<div class="standby-box-lk">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1a5fa8;margin-bottom:5px">👨 Laki-laki · Full Set</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
-          ${Object.entries(itemsToQty(items)).map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-        </div>
-      </div>`;
-    } else if(isStandbyPR){
-      barangHtml=`<div class="standby-box-pr">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#c0392b;margin-bottom:5px">👩 Perempuan · Full Set</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
-          ${Object.entries(itemsToQty(items)).map(([n,q])=>`<div class="item-line"><span class="qty">×${q}</span> ${n}</div>`).join('')}
-        </div>
-      </div>`;
-    } else {
-      barangHtml=renderItemsBox(items);
-    }
-
-    const ketDisplay=l.keterangan&&l.keterangan!==''&&!siapkan
-      ?`<div style="font-size:11px;color:var(--tx2);font-style:italic;margin-bottom:6px"><i class="ti ti-message-circle" aria-hidden="true" style="font-size:11px"></i> ${l.keterangan}</div>`
-      :'';
-
-    const totalChip=!siapkan
-      ?`<div class="total-chip"><i class="ti ti-box" aria-hidden="true" style="font-size:11px"></i> ${total} pcs</div>`:'';
-
-    return `<div class="log-row">
+    const items=l.items||[];
+    const total=items.reduce((s,x)=>s+Number(x.jumlah),0);
+    const namaDisplay=l.tipe==='keluar'||l.tipe==='masuk'
+      ? (l.keterangan||'—')
+      : `${l.tipe==='kirim'?'→':'←'} ${l.nama_cabang||l.keterangan||'—'}`;
+    return`<div class="log-row">
       <div class="log-date"><div class="log-d">${day}</div><div class="log-m">${mon}</div></div>
       <div class="log-info">
-        <div class="log-name">${namaDisplay}${tipeBadge(tipe)}</div>
-        <div class="log-meta-row">
-          ${blnDisplay}${siapkanMeta}
+        <div class="log-n" style="font-size:13px;font-weight:700">${namaDisplay}${tipeBadge(l.tipe)}</div>
+        <div class="log-meta-row" style="margin-top:4px;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--tx2)">${fmtDateLong(l.tanggal)}</span>
+          <span style="color:var(--border2)">·</span>
           ${petugasChip(l.petugas)}
         </div>
-        ${ketDisplay}
-        ${barangHtml}
-        ${totalChip}
+        ${items.length?renderItemsBox(items):''}
+        ${total?`<div class="total-chip">📦 ${total} pcs</div>`:''}
       </div>
     </div>`;
   }).join('');
 }
 
-function cetakPDFHistory(){
-  if(!filteredData.length){showToast('Tidak ada data untuk dicetak.','error');return;}
-  const tglCetak=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-  const html=`<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
-<title>History Log SO Perlengkapan</title>
-<style>
-  body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
-  .page{padding:28px 36px;max-width:740px;margin:0 auto}
-  .header{background:#1B6B45;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px}
-  .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
-  .header p{font-size:11px;opacity:.85;margin:2px 0}
-  table{width:100%;border-collapse:collapse;font-size:11px}
-  th{background:#EAF5EE;color:#1B6B45;text-align:left;padding:7px 9px;font-weight:700;border:1px solid #A8D5B8}
-  td{padding:7px 9px;border:1px solid #ddd;vertical-align:top}
-  tr:nth-child(even) td{background:#fafafa}
-  .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
-  .b-blue{background:#E8F1FB;color:#185FA5}
-  .b-green{background:#EAF5EE;color:#1B6B45}
-  .b-warn{background:#FAEEDA;color:#854f0b}
-  .b-purple{background:#EEEDFE;color:#534AB7}
-  .footer{margin-top:24px;font-size:10px;color:#aaa;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body><div class="page">
-<div class="header">
-  <h1>History Log Perlengkapan Umroh</h1>
-  <p>Dicetak: ${tglCetak} · Oleh: ${user.username} · Total: ${filteredData.length} transaksi</p>
-</div>
-<table>
-  <thead><tr><th width="4%">No</th><th width="12%">Tanggal</th><th width="20%">Nama</th><th width="10%">Tipe</th><th width="14%">Bulan Kbkt</th><th width="27%">Barang (Qty)</th><th width="13%">Petugas</th></tr></thead>
-  <tbody>
-    ${filteredData.map((l,i)=>{
-      const d=new Date(l.tanggal||'');
-      const tglStr=isNaN(d)?l.tanggal:`${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
-      const items=Array.isArray(l.barang)?l.barang:[];
-      const map={};items.forEach(it=>map[it]=(map[it]||0)+1);
-      const barangStr=Object.entries(map).map(([n,q])=>`${n} ×${q}`).join(', ');
-      const tipe=l.tipe||'satuan';
-      const bdgMap={'satuan':'b-blue','standby_lk':'b-blue','standby_pr':'b-blue','standby_siapkan_lk':'b-warn','standby_siapkan_pr':'b-warn','rombongan':'b-purple','rombongan_lk':'b-purple','rombongan_pr':'b-purple'};
-      const bdgLabel={'satuan':'Satuan','standby_lk':'Standby LK','standby_pr':'Standby PR','standby_siapkan_lk':'Siapkan LK','standby_siapkan_pr':'Siapkan PR','rombongan':'Rombongan','rombongan_lk':'Rombongan','rombongan_pr':'Rombongan'};
-      return`<tr><td>${i+1}</td><td>${tglStr}</td><td>${l.nama_jamaah||''}</td>
-        <td><span class="badge ${bdgMap[tipe]||'b-blue'}">${bdgLabel[tipe]||tipe}</span></td>
-        <td>${l.bulan_keberangkatan||'-'}</td>
-        <td>${barangStr}${l.keterangan?`<br><em style="color:#888">${l.keterangan}</em>`:''}</td>
-        <td>${l.petugas||''}</td></tr>`;
-    }).join('')}
-  </tbody>
-</table>
-<div class="footer"><span>SO Perlengkapan Umroh · Assyifa Tour & Travel</span><span>${tglCetak}</span></div>
-</div></body></html>`;
-  const w=window.open('','_blank','width=820,height=680');
-  if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),700);}
-  else showToast('Izinkan popup untuk mencetak!','error');
+function filterLog(q){
+  const tipe=document.getElementById('filt-tipe').value;
+  const pet=document.getElementById('filt-pet').value;
+  filtered=allData.filter(l=>{
+    const ket=(l.keterangan||l.nama_cabang||'').toLowerCase();
+    return ket.includes(q.toLowerCase())&&(!tipe||l.tipe===tipe)&&(!pet||l.petugas===pet);
+  });
+  document.getElementById('summary').textContent=filtered.length?`Menampilkan ${filtered.length} transaksi`:'';
+  renderLog();
 }
 
-async function loadLog(){
+function cetakPDF(){
+  if(!filtered.length){showToast('Tidak ada data.','error');return;}
+  const tgl=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>History Log</title>
+<style>body{font-family:Arial,sans-serif;font-size:12px;margin:0}.page{padding:28px 36px;max-width:740px;margin:0 auto}
+.hdr{background:#1B6B45;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:16px}
+.hdr h1{font-size:17px;font-weight:700;margin:0 0 4px}.hdr p{font-size:11px;opacity:.85;margin:2px 0}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#EAF5EE;color:#1B6B45;padding:7px 9px;text-align:left;font-weight:700;border:1px solid #A8D5B8}
+td{padding:7px 9px;border:1px solid #ddd;vertical-align:top}tr:nth-child(even) td{background:#fafafa}
+.badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.keluar{background:#FDECEA;color:#a32d2d}.masuk{background:#EAF5EE;color:#1B6B45}
+.kirim{background:#FEF3E2;color:#854f0b}.kembali{background:#E8F1FB;color:#185FA5}
+.foot{margin-top:20px;font-size:10px;color:#aaa;border-top:1px solid #ddd;padding-top:8px;display:flex;justify-content:space-between}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page">
+<div class="hdr"><h1>📋 History Log Transaksi</h1><p>Assyifa Tour & Travel — SO Perlengkapan Umroh</p><p>Dicetak: ${tgl} · Oleh: ${user.username} · ${filtered.length} transaksi</p></div>
+<table><thead><tr><th>No</th><th>Tanggal</th><th>Keterangan</th><th>Tipe</th><th>Barang</th><th>Petugas</th></tr></thead>
+<tbody>${filtered.map((l,i)=>{
+  const items=l.items||[];
+  const map=itemsToQty(items);
+  const barangStr=Object.entries(map).map(([n,q])=>`${n} ×${q}`).join(', ');
+  const tipeLabel={'keluar':'Keluar','masuk':'Masuk','kirim':'Ke Cabang','kembali':'Dari Cabang'};
+  return`<tr><td>${i+1}</td><td>${fmtDateLong(l.tanggal)}</td>
+    <td>${l.keterangan||l.nama_cabang||'—'}</td>
+    <td><span class="badge ${l.tipe||''}">${tipeLabel[l.tipe]||l.tipe}</span></td>
+    <td>${barangStr}</td><td>${l.petugas||''}</td></tr>`;
+}).join('')}</tbody></table>
+<div class="foot"><span>SO Perlengkapan Umroh · Assyifa Tour & Travel</span><span>${tgl}</span></div>
+</div></body></html>`;
+  const w=window.open('','_blank','width=820,height=680');
+  if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);}
+  else showToast('Izinkan popup!','error');
+}
+
+async function loadAll(){
   showLoading(true);
   try{
-    const res=await apiGet({action:'getLog'});
-    if(res.ok){logData=normalizeLogs(res.data);updateFilter();filterLog('');}
-    else showToast('Gagal memuat.','error');
-  }catch(e){showToast('Gagal terhubung.','error');}
+    const [rl, rcbg, rrs] = await Promise.all([
+      apiGet({action:'getLog'}),
+      apiGet({action:'getLogCabang'}),
+      apiGet({action:'getRestock'}),
+    ]);
+    const logKeluar=(rl.ok?rl.data:[]).map(l=>({...l,tipe:'keluar'}));
+    const logCabang=(rcbg.ok?rcbg.data:[]);
+    // Group restock by tanggal+petugas+keterangan
+    const rsGroups={};
+    (rrs.ok?rrs.data:[]).forEach(r=>{
+      const k=`${r.tanggal}||${r.petugas}||${r.keterangan}`;
+      if(!rsGroups[k]) rsGroups[k]={tanggal:r.tanggal,petugas:r.petugas,keterangan:r.keterangan,tipe:'masuk',items:[]};
+      rsGroups[k].items.push({nama:r.nama_barang,jumlah:r.jumlah});
+    });
+    const logMasuk=Object.values(rsGroups);
+    allData=[...logKeluar,...logCabang,...logMasuk].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
+    filtered=[...allData];
+    document.getElementById('summary').textContent=`Menampilkan ${filtered.length} transaksi`;
+    renderLog();
+  }catch(e){showToast('Gagal memuat.','error');}
   showLoading(false);
 }
-loadLog();
+loadAll();
 </script>
 </body>
 </html>
