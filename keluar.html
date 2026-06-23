@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Barang Keluar — SO Perlengkapan</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="loading" style="display:none"><div class="spinner"></div><p>Menyimpan...</p></div>
+<nav class="navbar" id="navbar"></nav>
+<div class="container">
+  <div class="card card-accent">
+    <div class="card-title">📤 Catat Barang Keluar</div>
+    <div class="fr">
+      <label>Keterangan Pengambilan</label>
+      <input type="text" id="ket" placeholder="cth: Atas nama Pak Bambang — jamaah Juli 2026"/>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">Tanggal: <strong id="tgl-display"></strong></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Pilih Barang yang Keluar</div>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">Masukkan jumlah per item. Kosong atau 0 = tidak diambil.</p>
+    <div id="item-list"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:4px">
+      <span id="summary" style="font-size:13px;color:var(--tx2)">0 item</span>
+      <button class="btn btn-sm btn-outline" onclick="resetAllQty(SEMUA_BARANG)">🔄 Reset</button>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" style="margin-top:12px" onclick="simpan()">
+      💾 Simpan Barang Keluar
+    </button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+if(!requireLogin()) throw '';
+renderNavbar('keluar.html');
+const user=getUser();
+document.getElementById('tgl-display').textContent=fmtDateLong(isoToday());
+
+function updateSummary(){
+  const sel=getSelectedItems(SEMUA_BARANG);
+  const total=sel.reduce((s,x)=>s+x.jumlah,0);
+  document.getElementById('summary').textContent=
+    sel.length?`${sel.length} jenis · ${total} pcs total`:'0 item dipilih';
+}
+buildItemInputs('item-list', SEMUA_BARANG);
+updateSummary();
+
+async function simpan(){
+  const ket=document.getElementById('ket').value.trim();
+  if(!ket){showToast('Keterangan wajib diisi!','error');return;}
+  const items=getSelectedItems(SEMUA_BARANG);
+  if(!items.length){showToast('Pilih minimal 1 barang!','error');return;}
+  showLoading(true);
+  try{
+    const res=await apiPost({action:'barangKeluar',data:{tanggal:isoToday(),keterangan:ket,items,petugas:user.username}});
+    if(res.ok){
+      showToast('✅ Barang keluar berhasil dicatat!','success');
+      document.getElementById('ket').value='';
+      resetAllQty(SEMUA_BARANG);
+      setTimeout(()=>window.location.href='history.html',1200);
+    } else showToast(res.msg||'Gagal.','error');
+  }catch(e){showToast('Gagal terhubung.','error');}
+  showLoading(false);
+}
+</script>
+</body>
+</html>
