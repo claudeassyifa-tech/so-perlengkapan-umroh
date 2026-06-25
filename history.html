@@ -70,9 +70,15 @@ function renderLog(){
     const day=isNaN(d)?'—':d.getDate(), mon=isNaN(d)?'—':BLN[d.getMonth()];
     const items=l.items||[];
     const total=items.reduce((s,x)=>s+Number(x.jumlah),0);
-    const namaDisplay=l.tipe==='keluar'||l.tipe==='masuk'
-      ? (l.keterangan||'—')
-      : `${l.tipe==='kirim'?'→':'←'} ${l.nama_cabang||l.keterangan||'—'}`;
+
+    // Nama display sesuai tipe
+    let namaDisplay='';
+    if(l.tipe==='keluar') namaDisplay=l.keterangan||'Barang Keluar';
+    else if(l.tipe==='masuk') namaDisplay=l.keterangan||'Barang Masuk';
+    else if(l.tipe==='kirim') namaDisplay=`→ ${l.nama_cabang||''}${l.keterangan?' · '+l.keterangan:''}`;
+    else if(l.tipe==='kembali') namaDisplay=`← ${l.nama_cabang||''}${l.keterangan?' · '+l.keterangan:''}`;
+    else namaDisplay=l.keterangan||'—';
+
     return`<div class="log-row">
       <div class="log-date"><div class="log-d">${day}</div><div class="log-m">${mon}</div></div>
       <div class="log-info">
@@ -142,21 +148,72 @@ async function loadAll(){
       apiGet({action:'getLogCabang'}),
       apiGet({action:'getRestock'}),
     ]);
-    const logKeluar=(rl.ok?rl.data:[]).map(l=>({...l,tipe:'keluar'}));
-    const logCabang=(rcbg.ok?rcbg.data:[]);
-    // Group restock by tanggal+petugas+keterangan
+
+    // Normalisasi tanggal ke YYYY-MM-DD
+    function normTgl(val){
+      if(!val) return '';
+      const s=String(val).trim();
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const d=new Date(s);
+      if(!isNaN(d)){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
+      return s;
+    }
+
+    // Parse items dari berbagai format
+    function parseItems(l){
+      // Sudah ada l.items dari backend
+      if(Array.isArray(l.items)&&l.items.length) return l.items;
+      // Coba parse dari l.detail (format baru)
+      if(l.detail){try{const p=JSON.parse(l.detail);if(Array.isArray(p))return p;}catch{}}
+      // Coba parse dari l.barang (format JSON string)
+      if(l.barang&&typeof l.barang==='string'&&l.barang.startsWith('[')){
+        try{const p=JSON.parse(l.barang);if(Array.isArray(p))return p;}catch{}
+      }
+      // Format lama: "Koper×3, Mukena×1" atau "Koper, Mukena"
+      if(l.barang&&typeof l.barang==='string'){
+        const parts=l.barang.split(',').map(s=>s.trim()).filter(Boolean);
+        const map={};
+        parts.forEach(p=>{
+          const m=p.match(/^(.+)[×x](\d+)$/);
+          if(m){map[m[1].trim()]=(map[m[1].trim()]||0)+parseInt(m[2]);}
+          else if(p){map[p]=(map[p]||0)+1;}
+        });
+        return Object.entries(map).map(([nama,jumlah])=>({nama,jumlah}));
+      }
+      return [];
+    }
+
+    const logKeluar=(rl.ok?rl.data:[]).map(l=>({
+      ...l,
+      tipe: l.tipe||'keluar',
+      tanggal: normTgl(l.tanggal),
+      items: parseItems(l),
+      keterangan: l.keterangan||''
+    }));
+
+    const logCabang=(rcbg.ok?rcbg.data:[]).map(l=>({
+      ...l,
+      tanggal: normTgl(l.tanggal),
+      items: parseItems(l),
+    }));
+
+    // Group restock
     const rsGroups={};
     (rrs.ok?rrs.data:[]).forEach(r=>{
-      const k=`${r.tanggal}||${r.petugas}||${r.keterangan}`;
-      if(!rsGroups[k]) rsGroups[k]={tanggal:r.tanggal,petugas:r.petugas,keterangan:r.keterangan,tipe:'masuk',items:[]};
-      rsGroups[k].items.push({nama:r.nama_barang,jumlah:r.jumlah});
+      const tgl=normTgl(r.tanggal);
+      const k=`${tgl}||${r.petugas}||${r.keterangan}`;
+      if(!rsGroups[k]) rsGroups[k]={tanggal:tgl,petugas:r.petugas,keterangan:r.keterangan,tipe:'masuk',items:[]};
+      rsGroups[k].items.push({nama:r.nama_barang,jumlah:Number(r.jumlah)});
     });
     const logMasuk=Object.values(rsGroups);
-    allData=[...logKeluar,...logCabang,...logMasuk].sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
+
+    // Gabung & sort terbaru dulu
+    allData=[...logKeluar,...logCabang,...logMasuk]
+      .sort((a,b)=>(b.tanggal||'').localeCompare(a.tanggal||''));
     filtered=[...allData];
     document.getElementById('summary').textContent=`Menampilkan ${filtered.length} transaksi`;
     renderLog();
-  }catch(e){showToast('Gagal memuat.','error');}
+  }catch(e){console.error(e);showToast('Gagal memuat.','error');}
   showLoading(false);
 }
 loadAll();
